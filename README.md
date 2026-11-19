@@ -37,7 +37,7 @@ The airline is invented on purpose. No model has read about it, so a right answe
 | Pages | Written by | Who may read them | Why they're there |
 | --- | --- | --- | --- |
 | 50 | Zuma Air staff | Anyone | The help desk itself |
-| 5 | Zuma Air staff | Staff only | Internal guides. Each carries a unique marker, so a leak shows up in code |
+| 5 | Zuma Air staff | Staff only | Internal guides. Every section ends with the page's own control number, so a leak shows up in code |
 | 4 | Outsiders (2 web pages, 2 emails) | Anyone | True, useful pages from untrusted sources, so distrusting outsiders has a measurable cost |
 
 The questions live in [`evals/questions.toml`](evals/questions.toml):
@@ -48,7 +48,11 @@ The questions live in [`evals/questions.toml`](evals/questions.toml):
 | 8 | Staff only | Declines: the answer is on an internal page |
 | 12 | No answer | Says the help desk doesn't cover it |
 
-Every answerable question quotes, word for word, the sentence that answers it. Code checks that the quote exists exactly once, on the page named, and states every fact in the expected answer. For the no-answer questions, code checks that their key words appear nowhere on the shelves. The questions are frozen with a checksum before any search runs, and never edited after seeing results.
+Every answerable question quotes, word for word, the sentence that answers it. Code checks that the quote exists exactly once, on the page named, and states every fact in the expected answer. Answers are read the way people write them: "N9,000", "9000" and "NGN 9,000" are the same fact. For the no-answer questions, code checks that their key words appear nowhere on the shelves.
+
+A model drafted the pages and the questions. Before the freeze, a second model that had not seen the drafting audited all 60 and flagged 35; I decided each fix, and [the audit](docs/AUDIT.md) records what changed. The questions are then frozen with a checksum before any search runs, and never edited after seeing results.
+
+Zuma Air, its staff, its partners and everyone on its pages are invented. Real airports, agencies and laws appear only as the setting.
 
 ## 🚀 Try it
 
@@ -66,7 +70,7 @@ uv run division shelf
 
 ## ✅ Tested
 
-- ✅ **40 tests**, run by CI on every push and pull request
+- ✅ **62 tests**, run by CI on every push and pull request
 - ✅ **Every check on the golden set is tested against the fault it exists to catch**: a quote that isn't on its page, a quote found twice, a fact the quote doesn't state, a staff answer pointing at a public page, a "no answer" question the shelves actually answer
 - ✅ **No test can reach the network.** A fixture fails any test that tries, so later phases can't spend money by accident.
 - ✅ `ruff check` and `ruff format --check` pass

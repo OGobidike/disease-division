@@ -17,4 +17,4 @@ Plateau includes one checked bag of up to 20 kg, free standard seat selection, a
 
 ## Peak
 
-Peak includes two checked bags of up to 23 kg each, any seat including exit rows, free changes, a full refund before departure and entry to the Zuma Lounge in Abuja and Lagos.
+Peak includes two checked bags of up to 23 kg each, any seat including exit rows, free changes, a full refund until the gate closes and entry to the Zuma Lounge in Abuja and Lagos.

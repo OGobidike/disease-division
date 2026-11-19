@@ -8,7 +8,11 @@ Each question in evals/questions.toml is one of three kinds:
 
 An answerable or staff-only question names its page, quotes the `evidence` (the exact words on
 that page that answer it) and lists the `answer` facts a correct reply must contain. A fact may
-offer alternatives separated by " | ", such as "10% | 10 percent".
+offer alternatives separated by " | ", such as "two | 2".
+
+Before matching, both texts are normalised (see `normalise`), so a reply may write an amount
+the way people really do: "N9,000", "NGN9000", "9000", "20 per cent", "7kg" or "10pm".
+Written-out forms ("two", "an hour") are listed as alternatives instead.
 
 A no-answer question lists `absent` terms instead: words that must not appear anywhere in the
 stacks, which is how code proves the stacks really don't cover it.
@@ -62,10 +66,37 @@ def alternatives(fact: str) -> list[str]:
     return [option.strip() for option in fact.split("|") if option.strip()]
 
 
+_REWRITES = [
+    # Dashes of every width read as a hyphen: "21–24" is "21-24".
+    (re.compile("[\u2012\u2013\u2014\u2015\u2212]"), "-"),
+    # Naira prefixes go: "NGN 9,000", "NGN9,000", the naira sign and "N9,000" all become "9,000".
+    (re.compile(r"(?<!\w)(?:ngn|\u20a6)\s*(?=\d)", re.IGNORECASE), ""),
+    (re.compile(r"(?<!\w)N(?=\d)"), ""),
+    # Thousands separators go: "9,000" becomes "9000".
+    (re.compile(r"(?<=\d),(?=\d{3}(?!\d))"), ""),
+    # "20 per cent", "20 percent" and "20 %" all become "20%".
+    (re.compile(r"(\d)\s*(?:%|per\s?cent\b)", re.IGNORECASE), r"\1%"),
+    # Units close up the same way every time: "7kg", "7 kilos" and "7 kilograms" become "7 kg".
+    (re.compile(r"(\d)\s*(?:kg|kgs|kilos?|kilograms?)\b", re.IGNORECASE), r"\1 kg"),
+    (re.compile(r"(\d)\s*(?:wh|watt[- ]?hours?)\b", re.IGNORECASE), r"\1 wh"),
+    (re.compile(r"(\d)\s*mins?\b", re.IGNORECASE), r"\1 minutes"),
+    # Clock times: "10pm" and "10 p.m." become "10 pm".
+    (re.compile(r"(\d)\s*([ap])\.?m\.?(?!\w)", re.IGNORECASE), r"\1 \2m"),
+    (re.compile(r"\s+"), " "),
+]
+
+
+def normalise(text: str) -> str:
+    """Write amounts, units and times one way, so equal facts compare equal."""
+    for pattern, replacement in _REWRITES:
+        text = pattern.sub(replacement, text)
+    return text.strip()
+
+
 def mentions(text: str, phrase: str) -> bool:
     """True when the phrase appears as whole words, ignoring case: "7" is not found in "17"."""
-    pattern = r"(?<!\w)" + re.escape(phrase.strip()) + r"(?!\w)"
-    return re.search(pattern, text, flags=re.IGNORECASE) is not None
+    pattern = r"(?<!\w)" + re.escape(normalise(phrase)) + r"(?!\w)"
+    return re.search(pattern, normalise(text), flags=re.IGNORECASE) is not None
 
 
 def states(text: str, fact: str) -> bool:

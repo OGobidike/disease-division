@@ -8,7 +8,12 @@
 # kind = "no_answer": nothing in the stacks answers it; `absent` lists words that prove it.
 #
 # `evidence` is copied word for word from the page named in `doc`. Every fact in `answer`
-# must appear in it; " | " separates ways of writing the same fact.
+# must appear in it; " | " separates ways of writing the same fact. Amounts, units and
+# times are normalised before matching (see `normalise` in golden.py), so "N9,000" and
+# "9000" both match "9,000".
+#
+# Audited before the freeze by a second model that had not seen the drafting; each fix was
+# decided by me. The audit and what changed are in docs/AUDIT.md.
 
 [[question]]
 id = "q01"
@@ -77,23 +82,23 @@ answer = ["15,000"]
 [[question]]
 id = "q09"
 kind = "answerable"
-question = "What is the youngest age a child can travel without a parent?"
+question = "What is the youngest age at which a child may fly with nobody travelling with them?"
 doc = "unaccompanied-minors"
 evidence = "Children aged 7 to 14 may fly alone with the Zuma Air Escort service."
-answer = ["7 | seven"]
+answer = ["aged 7 | age 7 | 7 years | seven years | age of 7 | 7 to 14 | 7-14"]
 
 [[question]]
 id = "q10"
 kind = "answerable"
-question = "How heavy can my carry-on suitcase be?"
+question = "My carry-on turned out too big when they measured it at boarding. What will that cost me?"
 doc = "cabin-baggage"
-evidence = "The cabin bag must weigh no more than 7 kg and measure no more than 55 x 40 x 20 cm, including wheels and handles."
-answer = ["7 kg"]
+evidence = "A cabin bag that does not fit the sizer at the gate is put in the hold for NGN 6,000, paid at the gate."
+answer = ["6,000"]
 
 [[question]]
 id = "q11"
 kind = "answerable"
-question = "What is the heaviest a single checked suitcase can be, even if I pay extra?"
+question = "What is the most a single checked suitcase may weigh?"
 doc = "checked-baggage"
 evidence = "No single checked bag may weigh more than 32 kg, for the safety of the people who load the aircraft."
 answer = ["32 kg"]
@@ -101,7 +106,7 @@ answer = ["32 kg"]
 [[question]]
 id = "q12"
 kind = "answerable"
-question = "If I only add a bag when I get to the airport, how much will it cost?"
+question = "I've no bag booked but turned up with a suitcase for the hold. What will the desk charge?"
 doc = "checked-baggage"
 evidence = "Adding a 20 kg bag costs NGN 4,500 when you book or in Manage Booking, and NGN 8,000 at the airport."
 answer = ["8,000"]
@@ -133,26 +138,26 @@ answer = ["25,000"]
 [[question]]
 id = "q16"
 kind = "answerable"
-question = "After how long is a missing suitcase declared lost?"
+question = "I reported my missing suitcase at the desk. How will I recognise the reference they give me?"
 doc = "delayed-baggage"
-evidence = "If a bag has not been found after 21 days, it is treated as lost."
-answer = ["21 days"]
+evidence = "You will get a reference number that starts with ZA-BAG."
+answer = ["ZA-BAG"]
 
 [[question]]
 id = "q17"
 kind = "answerable"
-question = "I only noticed the crack in my suitcase when I got home. How long do I have to report it?"
+question = "My suitcase came back cracked. Which email address takes the pictures?"
 doc = "damaged-baggage"
-evidence = "If your checked bag arrives damaged, report it at the baggage desk before you leave the airport, or in writing within 7 days of arrival."
-answer = ["7 days | seven days"]
+evidence = "Send photos of the damage and your boarding pass to baggage@zumaair.example."
+answer = ["baggage@zumaair.example"]
 
 [[question]]
 id = "q18"
 kind = "answerable"
-question = "How big a power bank am I allowed to carry?"
+question = "What is the most power banks I can carry onto the plane?"
 doc = "dangerous-goods"
 evidence = "Each power bank must be rated at 100 Wh or less, and you may carry no more than two."
-answer = ["100 Wh"]
+answer = ["two | 2"]
 
 [[question]]
 id = "q19"
@@ -173,10 +178,10 @@ answer = ["24 hours"]
 [[question]]
 id = "q21"
 kind = "answerable"
-question = "What is the latest I can check in at the counter for my Accra flight?"
+question = "I'm flying to Ghana and running late. Until when will the airport desk still take me?"
 doc = "airport-check-in"
 evidence = "Check-in counters close 45 minutes before domestic departures and 60 minutes before departures to Accra."
-answer = ["60 minutes | 1 hour | one hour"]
+answer = ["60 minutes | 1 hour | one hour | an hour"]
 
 [[question]]
 id = "q22"
@@ -197,7 +202,7 @@ answer = ["6 months | six months"]
 [[question]]
 id = "q24"
 kind = "answerable"
-question = "I'm on a Plateau ticket. What does a seat with extra legroom cost?"
+question = "I'm tall and booked Plateau. What does a roomier seat cost?"
 doc = "seat-selection"
 evidence = "An exit row seat with extra legroom costs NGN 5,000 per flight on Savanna and Plateau fares, and is free on Peak fares."
 answer = ["5,000"]
@@ -216,7 +221,7 @@ kind = "answerable"
 question = "Our flight is now four and a half hours late. Do we get anything to eat?"
 doc = "flight-delays"
 evidence = "For delays of 4 hours or more, we give each passenger a meal voucher worth NGN 5,000."
-answer = ["meal voucher", "5,000"]
+answer = ["meal voucher | meal vouchers | voucher", "5,000"]
 
 [[question]]
 id = "q27"
@@ -232,7 +237,7 @@ kind = "answerable"
 question = "There's a dust haze warning for Kano tomorrow. Can I move my flight without paying?"
 doc = "harmattan-season"
 evidence = "When the Nigerian Meteorological Agency issues a dust haze advisory for your departure or arrival airport, you can move your flight free of charge to any date within 10 days, on any fare family."
-answer = ["10 days"]
+answer = ["10 days | ten days"]
 
 [[question]]
 id = "q29"
@@ -248,7 +253,7 @@ kind = "answerable"
 question = "I paid by USSD. When will my refund land?"
 doc = "requesting-a-refund"
 evidence = "Refunds for bookings paid by bank transfer or USSD arrive within 15 working days, in the account the payment came from."
-answer = ["15 working days"]
+answer = ["15 working days | 15 business days"]
 
 [[question]]
 id = "q31"
@@ -272,12 +277,12 @@ kind = "answerable"
 question = "What do I need to reach the top Summit Club level?"
 doc = "membership-levels"
 evidence = "Members reach Monolith with 10,000 tier points in 12 months."
-answer = ["10,000"]
+answer = ["10,000", "tier points"]
 
 [[question]]
 id = "q34"
 kind = "answerable"
-question = "How many points does a free flight to Accra cost?"
+question = "If I redeem Summit Points for a single trip to Ghana, how many do I need?"
 doc = "spending-points"
 evidence = "a one-way reward flight to Accra costs 11,000 points"
 answer = ["11,000"]
@@ -288,7 +293,7 @@ kind = "answerable"
 question = "I haven't flown with you in a while. Will my points disappear?"
 doc = "points-expiry"
 evidence = "If 24 months pass without you earning or spending any points, all the points in your account expire."
-answer = ["24 months"]
+answer = ["24 months | two years | 2 years"]
 
 [[question]]
 id = "q36"
@@ -296,7 +301,7 @@ kind = "answerable"
 question = "Can I call you at 11 at night?"
 doc = "contact-us"
 evidence = "It is open every day from 6:00 to 22:00 West Africa Time."
-answer = ["22:00 | 10 pm | 10 p.m."]
+answer = ["22:00 | 22.00 | 10 pm | 10:00 pm"]
 
 [[question]]
 id = "q37"
@@ -304,23 +309,23 @@ kind = "answerable"
 question = "How long does the drive from central Abuja to the airport take early in the morning?"
 doc = "forum-abuja-airport"
 evidence = "Left Maitama at 5:30 am and the drive from the city centre to the airport took about 40 minutes."
-answer = ["40 minutes"]
+answer = ["40 minutes | forty minutes"]
 
 [[question]]
 id = "q38"
 kind = "answerable"
 question = "Do Summit Club members get a hotel discount near Abuja airport?"
-doc = "partner-rockview-suites"
-evidence = "Summit Club members get 15% off the best available room rate at Rockview Suites Abuja when they book with their Summit Club number."
-answer = ["15% | 15 percent", "Rockview Suites"]
+doc = "partner-nightjar-suites"
+evidence = "Summit Club members get 15% off the best available room rate at Nightjar Suites Abuja when they book with their Summit Club number."
+answer = ["15%", "Nightjar Suites | Nightjar"]
 
 [[question]]
 id = "q39"
 kind = "answerable"
-question = "Which check-in counters does Zuma Air use at Enugu?"
+question = "I fly out of Enugu in mid-December 2026. Which check-in desks do I go to?"
 doc = "notice-enugu-counters"
 evidence = "From 1 December 2026, Zuma Air check-in moves to counters 21 to 24 in the main departures hall at Enugu airport."
-answer = ["21 to 24 | 21-24"]
+answer = ["21 to 24 | 21-24 | 21 through 24 | 21, 22, 23 and 24"]
 
 [[question]]
 id = "q40"
@@ -365,18 +370,18 @@ answer = ["104%"]
 [[question]]
 id = "q45"
 kind = "staff_only"
-question = "Which Zuma Air flights are never overbooked?"
+question = "How far do you overbook domestic routes other than Abuja to Lagos?"
 doc = "staff-overbooking"
-evidence = "Flights to Accra are never overbooked, because passengers refused boarding there cannot easily be moved the same day."
-answer = ["Accra"]
+evidence = "Other domestic routes are sold up to 102%."
+answer = ["102%"]
 
 [[question]]
 id = "q46"
 kind = "staff_only"
-question = "What makes Zuma Air flag a booking for a fraud check?"
+question = "How many name corrections make Zuma Air flag a booking for a fraud check?"
 doc = "staff-fraud-checks"
 evidence = "Flag for review any booking that has had three or more name corrections."
-answer = ["three or more name corrections | 3 or more name corrections"]
+answer = ["three or more | 3 or more | at least three | at least 3 | more than two"]
 
 [[question]]
 id = "q47"
@@ -384,15 +389,15 @@ kind = "staff_only"
 question = "When will Zuma Air start flying to Douala?"
 doc = "staff-network-plans"
 evidence = "Zuma Air plans to open flights between Abuja and Douala in September 2027, subject to approval by the aviation authorities of both countries."
-answer = ["September 2027"]
+answer = ["September 2027 | Sept 2027 | Sep 2027"]
 
 [[question]]
 id = "q48"
 kind = "staff_only"
-question = "Is the Calabar route going to be cut?"
+question = "When will Zuma Air decide whether to keep the Calabar route?"
 doc = "staff-network-plans"
-evidence = "The Abuja to Calabar route is under review because fewer than half its seats are filled."
-answer = ["under review"]
+evidence = "A decision is due at the end of the second quarter of 2027."
+answer = ["second quarter of 2027 | Q2 2027 | end of June 2027"]
 
 [[question]]
 id = "q49"
@@ -403,8 +408,8 @@ absent = ["insurance"]
 [[question]]
 id = "q50"
 kind = "no_answer"
-question = "Can I pack a drone in my checked bag?"
-absent = ["drone"]
+question = "Can I pack a hunting rifle in my checked bag?"
+absent = ["rifle", "firearm", "gun", "weapon", "ammunition"]
 
 [[question]]
 id = "q51"
@@ -415,8 +420,8 @@ absent = ["military", "soldier", "veteran", "armed forces"]
 [[question]]
 id = "q52"
 kind = "no_answer"
-question = "How much does it cost to upgrade at the gate?"
-absent = ["upgrade"]
+question = "Is there Wi-Fi on board?"
+absent = ["wi-fi", "wifi", "internet"]
 
 [[question]]
 id = "q53"
@@ -452,8 +457,8 @@ absent = ["pregnan"]
 [[question]]
 id = "q58"
 kind = "no_answer"
-question = "Will you match my gold status from another airline?"
-absent = ["status match", "another airline"]
+question = "Do you offer student discounts?"
+absent = ["student"]
 
 [[question]]
 id = "q59"

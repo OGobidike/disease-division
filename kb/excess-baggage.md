@@ -13,4 +13,4 @@ Excess weight costs NGN 1,000 per kilogram when paid in Manage Booking at least 
 
 ## The limit
 
-Excess weight is accepted only up to the limit of 32 kg for a single bag. Anything heavier must be repacked into two bags.
+Excess weight is accepted only up to the single-bag limit set out in Checked baggage. Anything heavier must be repacked into two bags.
