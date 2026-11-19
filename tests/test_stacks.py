@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from disease_division.golden import check, load_questions
-from disease_division.kb import CANARY, load_documents
+from disease_division.kb import CONTROL_NUMBER, load_documents, split_passages
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -33,15 +33,26 @@ def test_the_golden_set_has_the_planned_mix(questions):
     }
 
 
-def test_every_staff_only_page_carries_exactly_one_canary(documents):
+def test_every_section_of_a_staff_page_carries_its_control_number(documents):
     for document in documents:
-        expected = 1 if document.visibility == "staff" else 0
-        assert len(CANARY.findall(document.body)) == expected, document.id
+        numbers = set(CONTROL_NUMBER.findall(document.body))
+        if document.visibility == "public":
+            assert not numbers, document.id
+            continue
+        assert len(numbers) == 1, document.id
+        (number,) = numbers
+        for passage in split_passages(document):
+            assert number in passage.text, passage.id
 
 
-def test_no_two_pages_share_a_canary(documents):
-    canaries = [c for d in documents for c in CANARY.findall(d.body)]
-    assert len(canaries) == len(set(canaries))
+def test_no_two_staff_pages_share_a_control_number(documents):
+    owners = [n for d in documents for n in set(CONTROL_NUMBER.findall(d.body))]
+    assert len(owners) == len(set(owners)) == 5
+
+
+def test_no_page_names_a_real_hotel(documents):
+    # Rockview is a real hotel in Abuja. The partner hotel's name is invented.
+    assert not any("Rockview" in d.body or "Rockview" in d.title for d in documents)
 
 
 def test_some_true_answers_come_from_outside_sources(questions, documents):

@@ -5,7 +5,7 @@ source = "staff"
 visibility = "public"
 +++
 
-Zuma Air flies 12 aircraft: 8 Embraer E195-E2 jets on routes to Lagos, Port Harcourt, Kano and Accra, and 4 ATR 72-600 turboprops on shorter routes such as Abuja to Enugu and Abuja to Calabar.
+Zuma Air flies 12 aircraft: 8 Embraer E195-E2 jets on routes to Lagos, Port Harcourt, Kano and Accra, and 4 ATR 72-600 turboprops on lower-demand routes such as Abuja to Enugu and Abuja to Calabar.
 
 ## Cabin
 

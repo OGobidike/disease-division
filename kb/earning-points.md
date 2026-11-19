@@ -13,4 +13,4 @@ Each one-way flight earns 100 points on a Savanna fare, 250 points on a Plateau 
 
 ## Tier points
 
-The same flights also earn tier points, which count towards Granite and Monolith. Spending points on reward flights does not reduce your tier points.
+The same flights also earn tier points, which count towards Granite and Monolith: 100, 250 or 500 a flight, the same as the Summit Points. Spending points on reward flights does not reduce your tier points.

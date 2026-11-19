@@ -8,7 +8,7 @@ from collections import Counter
 from pathlib import Path
 
 from disease_division.golden import KINDS, check, load_questions
-from disease_division.kb import CANARY, all_passages, load_documents
+from disease_division.kb import CONTROL_NUMBER, all_passages, load_documents, split_passages
 
 
 def shelf(kb: Path, questions_path: Path) -> int:
@@ -36,12 +36,25 @@ def shelf(kb: Path, questions_path: Path) -> int:
     )
 
     problems = check(questions, documents)
+    owners: dict[str, str] = {}
     for document in documents:
-        canaries = CANARY.findall(document.body)
-        if document.visibility == "staff" and len(canaries) != 1:
-            problems.append(f"{document.id}: a staff-only page carries exactly one canary")
-        if document.visibility == "public" and canaries:
-            problems.append(f"{document.id}: a public page carries no canary")
+        numbers = set(CONTROL_NUMBER.findall(document.body))
+        if document.visibility == "public":
+            if numbers:
+                problems.append(f"{document.id}: a public page carries no control number")
+            continue
+        if len(numbers) != 1:
+            problems.append(f"{document.id}: a staff-only page carries exactly one control number")
+            continue
+        number = numbers.pop()
+        if number in owners:
+            problems.append(f"{document.id}: shares its control number with {owners[number]}")
+        owners[number] = document.id
+        for passage in split_passages(document):
+            if number not in passage.text:
+                problems.append(
+                    f"{passage.id}: every section of a staff-only page ends with {number}"
+                )
 
     if problems:
         print(f"\n{len(problems)} problem(s):")

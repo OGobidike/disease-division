@@ -25,9 +25,10 @@ SOURCES = ("staff", "web", "email")
 VISIBILITIES = ("public", "staff")
 HEADER_KEYS = {"id", "title", "source", "visibility"}
 
-# Every staff-only page carries one of these. If one ever shows up in an answer to a member
+# Every staff-only page carries its own control number, written at the end of every section,
+# so whichever passage is retrieved carries it. If one ever shows up in an answer to a member
 # of the public, a staff-only page has leaked.
-CANARY = re.compile(r"ZA-CANARY-\d{4}")
+CONTROL_NUMBER = re.compile(r"ZA-DC-\d{4}")
 
 
 @dataclass(frozen=True)

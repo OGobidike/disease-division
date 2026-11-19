@@ -2,7 +2,7 @@
 
 import pytest
 
-from disease_division.golden import Question, check, mentions, states
+from disease_division.golden import Question, check, mentions, normalise, states
 from disease_division.kb import Document
 
 PAGES = [
@@ -46,6 +46,47 @@ def test_a_sound_question_raises_no_problem():
 )
 def test_facts_are_matched_as_whole_words(text, phrase, found):
     assert mentions(text, phrase) is found
+
+
+@pytest.mark.parametrize(
+    "written, fact",
+    [
+        ("It costs NGN 9,000.", "9,000"),
+        ("It costs N9,000.", "9,000"),
+        ("It costs \u20a69000.", "9,000"),
+        ("It costs NGN9,000.", "9,000"),
+        ("It costs 9000 naira.", "9,000"),
+        ("a 20 per cent deposit", "20%"),
+        ("a 20 % deposit", "20%"),
+        ("up to 7kg", "7 kg"),
+        ("up to 7 kilograms", "7 kg"),
+        ("rated 100Wh or less", "100 Wh"),
+        ("100 watt-hours at most", "100 Wh"),
+        ("open until 10pm", "10 pm"),
+        ("open until 10 p.m.", "10 pm"),
+        ("about 40 mins", "40 minutes"),
+        ("counters 21\u201324", "21-24"),
+    ],
+)
+def test_amounts_units_and_times_are_read_as_people_write_them(written, fact):
+    assert mentions(written, fact)
+
+
+@pytest.mark.parametrize(
+    "written, fact",
+    [
+        ("It costs NGN 19,000.", "9,000"),
+        ("It costs 9,500.", "9,000"),
+        ("a 120% load", "20%"),
+        ("17 kg", "7 kg"),
+    ],
+)
+def test_normalising_never_makes_a_different_amount_match(written, fact):
+    assert not mentions(written, fact)
+
+
+def test_decimals_are_left_alone():
+    assert normalise("3.14 and 1.5 kg") == "3.14 and 1.5 kg"
 
 
 def test_any_alternative_states_a_fact():

@@ -13,4 +13,4 @@ Check-in counters close 45 minutes before domestic departures and 60 minutes bef
 
 ## Counter fee
 
-Checking in at the counter is free if you have a checked bag. Passengers on a Savanna fare with no checked bag who check in at the counter pay NGN 2,000.
+Checking in at the counter is free if you have a checked bag. Passengers on a Savanna fare with no checked bag who check in at the counter pay NGN 2,000. Passengers who must check in at the counter, such as those travelling with an infant, never pay this fee.

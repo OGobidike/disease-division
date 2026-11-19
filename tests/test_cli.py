@@ -23,7 +23,7 @@ def test_shelf_names_each_problem_and_fails(tmp_path, capsys):
     kb.mkdir()
     (kb / "leaky.md").write_text(
         '+++\nid = "leaky"\ntitle = "Leaky"\nsource = "web"\nvisibility = "public"\n+++\n\n'
-        "Note ZA-CANARY-0001 here.\n",
+        "Note ZA-DC-0001 here.\n",
         encoding="utf-8",
     )
     questions = tmp_path / "questions.toml"
@@ -35,7 +35,7 @@ def test_shelf_names_each_problem_and_fails(tmp_path, capsys):
     code = main(["shelf", "--kb", str(kb), "--questions", str(questions)])
     out = capsys.readouterr().out
     assert code == 1
-    assert "leaky: a public page carries no canary" in out
+    assert "leaky: a public page carries no control number" in out
     assert "q01: 'note' appears in the stacks" in out
 
 
@@ -43,3 +43,23 @@ def test_shelf_says_plainly_when_it_cannot_read(tmp_path, capsys):
     code = main(["shelf", "--kb", str(tmp_path), "--questions", str(tmp_path / "none.toml")])
     assert code == 1
     assert "Could not read the stacks" in capsys.readouterr().out
+
+
+def test_shelf_catches_a_staff_section_without_its_control_number(tmp_path, capsys):
+    kb = tmp_path / "kb"
+    kb.mkdir()
+    (kb / "guide.md").write_text(
+        '+++\nid = "guide"\ntitle = "Guide"\nsource = "staff"\nvisibility = "staff"\n+++\n\n'
+        "Internal.\n\nControl no. ZA-DC-0002\n\n## Limits\n\nUp to NGN 20,000.\n",
+        encoding="utf-8",
+    )
+    questions = tmp_path / "questions.toml"
+    questions.write_text(
+        '[[question]]\nid = "q01"\nkind = "no_answer"\nquestion = "Any perks?"\n'
+        'absent = ["perk"]\n',
+        encoding="utf-8",
+    )
+    assert main(["shelf", "--kb", str(kb), "--questions", str(questions)]) == 1
+    assert "guide#2: every section of a staff-only page ends with ZA-DC-0002" in (
+        capsys.readouterr().out
+    )
