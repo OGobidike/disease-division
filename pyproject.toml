@@ -6,6 +6,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
 
+[project.scripts]
+division = "disease_division.cli:main"
+
 [dependency-groups]
 dev = [
     "pytest>=8",

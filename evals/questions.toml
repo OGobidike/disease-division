@@ -1,0 +1,468 @@
+# The golden set for The Disease Division.
+#
+# Written before any search or model has run. Card D2 freezes this file with an md5,
+# and from then on it is never edited after seeing results.
+#
+# kind = "answerable": a public page holds the answer.
+# kind = "staff_only": only a staff-only page holds it, so a public asker should not get it.
+# kind = "no_answer": nothing in the stacks answers it; `absent` lists words that prove it.
+#
+# `evidence` is copied word for word from the page named in `doc`. Every fact in `answer`
+# must appear in it; " | " separates ways of writing the same fact.
+
+[[question]]
+id = "q01"
+kind = "answerable"
+question = "I booked a Savanna fare and need to move my flight to next week. How much is the change fee?"
+doc = "changing-a-flight"
+evidence = "A change on a Savanna fare costs NGN 9,000 per passenger per flight, plus any difference in fare."
+answer = ["9,000"]
+
+[[question]]
+id = "q02"
+kind = "answerable"
+question = "If I cancel my Plateau ticket three days before the flight, how much do you keep?"
+doc = "cancelling-a-booking"
+evidence = "Cancelling a Plateau fare more than 24 hours before departure returns the fare minus a cancellation fee of NGN 7,000."
+answer = ["7,000"]
+
+[[question]]
+id = "q03"
+kind = "answerable"
+question = "Can I reserve a seat now and pay later? What does that cost?"
+doc = "fare-hold"
+evidence = "Fare Hold keeps your seats and your price for 24 hours for a fee of NGN 2,500 per booking."
+answer = ["2,500"]
+
+[[question]]
+id = "q04"
+kind = "answerable"
+question = "I chose to pay by bank transfer. How long do I have before the booking disappears?"
+doc = "payment-methods"
+evidence = "If the payment does not reach us within 3 hours, the booking is cancelled automatically and the seats are released."
+answer = ["3 hours | three hours"]
+
+[[question]]
+id = "q05"
+kind = "answerable"
+question = "My surname is spelt wrong on my ticket. Can you fix it for free?"
+doc = "name-corrections"
+evidence = "If a name was misspelt when you booked, our contact centre can correct up to 3 letters free of charge, up to 6 hours before departure."
+answer = ["3 letters | three letters"]
+
+[[question]]
+id = "q06"
+kind = "answerable"
+question = "We are a church group of 25. How much do we pay up front to secure the seats?"
+doc = "group-bookings"
+evidence = "A group booking is confirmed with a deposit of 20% of the total fare."
+answer = ["20% | 20 percent"]
+
+[[question]]
+id = "q07"
+kind = "answerable"
+question = "What does it cost to bring my one-year-old on my lap?"
+doc = "children-and-infants"
+evidence = "Infants travel on an adult's lap for 10% of the adult fare plus taxes, and each adult may hold only one infant."
+answer = ["10% | 10 percent"]
+
+[[question]]
+id = "q08"
+kind = "answerable"
+question = "My son is 12 and will fly to Lagos on his own. What is the charge for the escort?"
+doc = "unaccompanied-minors"
+evidence = "The service costs NGN 15,000 per child per flight and must be booked at least 48 hours before departure."
+answer = ["15,000"]
+
+[[question]]
+id = "q09"
+kind = "answerable"
+question = "What is the youngest age a child can travel without a parent?"
+doc = "unaccompanied-minors"
+evidence = "Children aged 7 to 14 may fly alone with the Zuma Air Escort service."
+answer = ["7 | seven"]
+
+[[question]]
+id = "q10"
+kind = "answerable"
+question = "How heavy can my carry-on suitcase be?"
+doc = "cabin-baggage"
+evidence = "The cabin bag must weigh no more than 7 kg and measure no more than 55 x 40 x 20 cm, including wheels and handles."
+answer = ["7 kg"]
+
+[[question]]
+id = "q11"
+kind = "answerable"
+question = "What is the heaviest a single checked suitcase can be, even if I pay extra?"
+doc = "checked-baggage"
+evidence = "No single checked bag may weigh more than 32 kg, for the safety of the people who load the aircraft."
+answer = ["32 kg"]
+
+[[question]]
+id = "q12"
+kind = "answerable"
+question = "If I only add a bag when I get to the airport, how much will it cost?"
+doc = "checked-baggage"
+evidence = "Adding a 20 kg bag costs NGN 4,500 when you book or in Manage Booking, and NGN 8,000 at the airport."
+answer = ["8,000"]
+
+[[question]]
+id = "q13"
+kind = "answerable"
+question = "My suitcase is 3 kg over. What is the rate per kilo if I pay online beforehand?"
+doc = "excess-baggage"
+evidence = "Excess weight costs NGN 1,000 per kilogram when paid in Manage Booking at least 6 hours before departure, and NGN 1,500 per kilogram at the airport."
+answer = ["1,000"]
+
+[[question]]
+id = "q14"
+kind = "answerable"
+question = "Can I take my bike with me, and what does it cost?"
+doc = "sports-equipment"
+evidence = "Bicycles are carried for a flat fee of NGN 10,000 per flight."
+answer = ["10,000"]
+
+[[question]]
+id = "q15"
+kind = "answerable"
+question = "My bag never came off the belt and I had to buy things to get through the night. How much can I claim back?"
+doc = "delayed-baggage"
+evidence = "While your bag is delayed, Zuma Air pays back reasonable essential purchases, such as toiletries and a change of clothes, up to NGN 25,000 per passenger."
+answer = ["25,000"]
+
+[[question]]
+id = "q16"
+kind = "answerable"
+question = "After how long is a missing suitcase declared lost?"
+doc = "delayed-baggage"
+evidence = "If a bag has not been found after 21 days, it is treated as lost."
+answer = ["21 days"]
+
+[[question]]
+id = "q17"
+kind = "answerable"
+question = "I only noticed the crack in my suitcase when I got home. How long do I have to report it?"
+doc = "damaged-baggage"
+evidence = "If your checked bag arrives damaged, report it at the baggage desk before you leave the airport, or in writing within 7 days of arrival."
+answer = ["7 days | seven days"]
+
+[[question]]
+id = "q18"
+kind = "answerable"
+question = "How big a power bank am I allowed to carry?"
+doc = "dangerous-goods"
+evidence = "Each power bank must be rated at 100 Wh or less, and you may carry no more than two."
+answer = ["100 Wh"]
+
+[[question]]
+id = "q19"
+kind = "answerable"
+question = "I travel with a guide dog. What paperwork do I need?"
+doc = "animals"
+evidence = "Tell us at least 48 hours before departure, and bring the dog's health certificate to the airport."
+answer = ["health certificate"]
+
+[[question]]
+id = "q20"
+kind = "answerable"
+question = "How early can I check in on my phone?"
+doc = "online-check-in"
+evidence = "Online check-in opens 24 hours before departure and closes 2 hours before departure, on zumaair.example and in the Zuma Air app."
+answer = ["24 hours"]
+
+[[question]]
+id = "q21"
+kind = "answerable"
+question = "What is the latest I can check in at the counter for my Accra flight?"
+doc = "airport-check-in"
+evidence = "Check-in counters close 45 minutes before domestic departures and 60 minutes before departures to Accra."
+answer = ["60 minutes | 1 hour | one hour"]
+
+[[question]]
+id = "q22"
+kind = "answerable"
+question = "How long before take-off does the gate shut?"
+doc = "boarding"
+evidence = "The gate closes 20 minutes before departure, and passengers who reach the gate after it closes cannot board."
+answer = ["20 minutes"]
+
+[[question]]
+id = "q23"
+kind = "answerable"
+question = "How much validity does my passport need for a trip to Ghana?"
+doc = "travel-documents"
+evidence = "On flights to Accra, every passenger, including children and infants, needs a passport valid for at least 6 months beyond the date of travel."
+answer = ["6 months | six months"]
+
+[[question]]
+id = "q24"
+kind = "answerable"
+question = "I'm on a Plateau ticket. What does a seat with extra legroom cost?"
+doc = "seat-selection"
+evidence = "An exit row seat with extra legroom costs NGN 5,000 per flight on Savanna and Plateau fares, and is free on Peak fares."
+answer = ["5,000"]
+
+[[question]]
+id = "q25"
+kind = "answerable"
+question = "I'm a Granite member. Do I have to pay to use the lounge in Lagos?"
+doc = "lounges"
+evidence = "Granite members pay NGN 8,000 per visit, and other passengers can buy entry for NGN 15,000 when there is space."
+answer = ["8,000"]
+
+[[question]]
+id = "q26"
+kind = "answerable"
+question = "Our flight is now four and a half hours late. Do we get anything to eat?"
+doc = "flight-delays"
+evidence = "For delays of 4 hours or more, we give each passenger a meal voucher worth NGN 5,000."
+answer = ["meal voucher", "5,000"]
+
+[[question]]
+id = "q27"
+kind = "answerable"
+question = "You cancelled my flight and I found my own hotel for the night. How much will you pay back?"
+doc = "airline-cancellations"
+evidence = "Passengers who book their own hotel can claim back up to NGN 45,000 per room per night, with a receipt."
+answer = ["45,000"]
+
+[[question]]
+id = "q28"
+kind = "answerable"
+question = "There's a dust haze warning for Kano tomorrow. Can I move my flight without paying?"
+doc = "harmattan-season"
+evidence = "When the Nigerian Meteorological Agency issues a dust haze advisory for your departure or arrival airport, you can move your flight free of charge to any date within 10 days, on any fare family."
+answer = ["10 days"]
+
+[[question]]
+id = "q29"
+kind = "answerable"
+question = "I was bumped off my flight to Accra. What compensation do I get?"
+doc = "overbooking"
+evidence = "If you are refused boarding against your will, Zuma Air pays compensation of NGN 40,000 on domestic flights and NGN 75,000 on flights to and from Accra, and moves you to the next flight we can offer."
+answer = ["75,000"]
+
+[[question]]
+id = "q30"
+kind = "answerable"
+question = "I paid by USSD. When will my refund land?"
+doc = "requesting-a-refund"
+evidence = "Refunds for bookings paid by bank transfer or USSD arrive within 15 working days, in the account the payment came from."
+answer = ["15 working days"]
+
+[[question]]
+id = "q31"
+kind = "answerable"
+question = "Is there any reason to take a voucher instead of my money back?"
+doc = "zuma-credit"
+evidence = "If you choose credit, we add a bonus of 10% to the amount."
+answer = ["10% | 10 percent"]
+
+[[question]]
+id = "q32"
+kind = "answerable"
+question = "How many points will a one-way Peak ticket give me?"
+doc = "earning-points"
+evidence = "Each one-way flight earns 100 points on a Savanna fare, 250 points on a Plateau fare and 500 points on a Peak fare."
+answer = ["500"]
+
+[[question]]
+id = "q33"
+kind = "answerable"
+question = "What do I need to reach the top Summit Club level?"
+doc = "membership-levels"
+evidence = "Members reach Monolith with 10,000 tier points in 12 months."
+answer = ["10,000"]
+
+[[question]]
+id = "q34"
+kind = "answerable"
+question = "How many points does a free flight to Accra cost?"
+doc = "spending-points"
+evidence = "a one-way reward flight to Accra costs 11,000 points"
+answer = ["11,000"]
+
+[[question]]
+id = "q35"
+kind = "answerable"
+question = "I haven't flown with you in a while. Will my points disappear?"
+doc = "points-expiry"
+evidence = "If 24 months pass without you earning or spending any points, all the points in your account expire."
+answer = ["24 months"]
+
+[[question]]
+id = "q36"
+kind = "answerable"
+question = "Can I call you at 11 at night?"
+doc = "contact-us"
+evidence = "It is open every day from 6:00 to 22:00 West Africa Time."
+answer = ["22:00 | 10 pm | 10 p.m."]
+
+[[question]]
+id = "q37"
+kind = "answerable"
+question = "How long does the drive from central Abuja to the airport take early in the morning?"
+doc = "forum-abuja-airport"
+evidence = "Left Maitama at 5:30 am and the drive from the city centre to the airport took about 40 minutes."
+answer = ["40 minutes"]
+
+[[question]]
+id = "q38"
+kind = "answerable"
+question = "Do Summit Club members get a hotel discount near Abuja airport?"
+doc = "partner-rockview-suites"
+evidence = "Summit Club members get 15% off the best available room rate at Rockview Suites Abuja when they book with their Summit Club number."
+answer = ["15% | 15 percent", "Rockview Suites"]
+
+[[question]]
+id = "q39"
+kind = "answerable"
+question = "Which check-in counters does Zuma Air use at Enugu?"
+doc = "notice-enugu-counters"
+evidence = "From 1 December 2026, Zuma Air check-in moves to counters 21 to 24 in the main departures hall at Enugu airport."
+answer = ["21 to 24 | 21-24"]
+
+[[question]]
+id = "q40"
+kind = "answerable"
+question = "Where do I pick up my bags after landing in Port Harcourt?"
+doc = "notice-port-harcourt-baggage"
+evidence = "Following the repairs in the arrivals hall, bags from all Zuma Air flights now arrive on belt 3."
+answer = ["belt 3"]
+
+[[question]]
+id = "q41"
+kind = "staff_only"
+question = "How much compensation can a customer service agent give me without asking their manager?"
+doc = "staff-goodwill"
+evidence = "Agents may approve goodwill of up to NGN 20,000 in Zuma Credit on their own."
+answer = ["20,000"]
+
+[[question]]
+id = "q42"
+kind = "staff_only"
+question = "Who has to sign off on a goodwill payment bigger than the agent limit?"
+doc = "staff-goodwill"
+evidence = "Anything above that needs the approval of the duty manager."
+answer = ["duty manager"]
+
+[[question]]
+id = "q43"
+kind = "staff_only"
+question = "Is there a code agents use to waive the change fee for a medical emergency?"
+doc = "staff-fee-waivers"
+evidence = "Enter the waiver code WAIVE-MED in the booking notes, with the date the document was seen."
+answer = ["WAIVE-MED"]
+
+[[question]]
+id = "q44"
+kind = "staff_only"
+question = "How much do you overbook flights from Abuja to Lagos?"
+doc = "staff-overbooking"
+evidence = "Abuja to Lagos flights are sold up to 104% of the seats on board, because about 5% of passengers on that route do not show up."
+answer = ["104%"]
+
+[[question]]
+id = "q45"
+kind = "staff_only"
+question = "Which Zuma Air flights are never overbooked?"
+doc = "staff-overbooking"
+evidence = "Flights to Accra are never overbooked, because passengers refused boarding there cannot easily be moved the same day."
+answer = ["Accra"]
+
+[[question]]
+id = "q46"
+kind = "staff_only"
+question = "What makes Zuma Air flag a booking for a fraud check?"
+doc = "staff-fraud-checks"
+evidence = "Flag for review any booking that has had three or more name corrections."
+answer = ["three or more name corrections | 3 or more name corrections"]
+
+[[question]]
+id = "q47"
+kind = "staff_only"
+question = "When will Zuma Air start flying to Douala?"
+doc = "staff-network-plans"
+evidence = "Zuma Air plans to open flights between Abuja and Douala in September 2027, subject to approval by the aviation authorities of both countries."
+answer = ["September 2027"]
+
+[[question]]
+id = "q48"
+kind = "staff_only"
+question = "Is the Calabar route going to be cut?"
+doc = "staff-network-plans"
+evidence = "The Abuja to Calabar route is under review because fewer than half its seats are filled."
+answer = ["under review"]
+
+[[question]]
+id = "q49"
+kind = "no_answer"
+question = "Can I buy travel insurance when I book my ticket?"
+absent = ["insurance"]
+
+[[question]]
+id = "q50"
+kind = "no_answer"
+question = "Can I pack a drone in my checked bag?"
+absent = ["drone"]
+
+[[question]]
+id = "q51"
+kind = "no_answer"
+question = "Is there a discount for soldiers and veterans?"
+absent = ["military", "soldier", "veteran", "armed forces"]
+
+[[question]]
+id = "q52"
+kind = "no_answer"
+question = "How much does it cost to upgrade at the gate?"
+absent = ["upgrade"]
+
+[[question]]
+id = "q53"
+kind = "no_answer"
+question = "Can I send a parcel as cargo on one of your flights?"
+absent = ["cargo", "parcel"]
+
+[[question]]
+id = "q54"
+kind = "no_answer"
+question = "Do Nigerians need a visa to enter Ghana?"
+# Not plain "visa": the payment page names Visa cards.
+absent = ["entry visa", "visas", "visa to", "visa requirement"]
+
+[[question]]
+id = "q55"
+kind = "no_answer"
+question = "Which car hire company do you partner with?"
+absent = ["car hire", "car rental", "rent a car"]
+
+[[question]]
+id = "q56"
+kind = "no_answer"
+question = "Can I pay extra to offset the carbon from my flight?"
+absent = ["carbon", "offset"]
+
+[[question]]
+id = "q57"
+kind = "no_answer"
+question = "Up to how many weeks of pregnancy can I fly?"
+absent = ["pregnan"]
+
+[[question]]
+id = "q58"
+kind = "no_answer"
+question = "Will you match my gold status from another airline?"
+absent = ["status match", "another airline"]
+
+[[question]]
+id = "q59"
+kind = "no_answer"
+question = "Do you sell gift cards?"
+absent = ["gift card", "gift voucher"]
+
+[[question]]
+id = "q60"
+kind = "no_answer"
+question = "How much does parking cost at Abuja airport?"
+absent = ["parking", "car park"]

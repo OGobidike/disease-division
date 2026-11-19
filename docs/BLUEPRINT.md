@@ -29,7 +29,7 @@ The name comes from a picture of a library with one division set apart for its d
 
 ## The knowledge base
 
-The knowledge base is the help desk of a made-up regional airline: fares, baggage, refunds, delays and loyalty points, in about 60 to 80 short documents.
+The knowledge base is the help desk of **Zuma Air**, a made-up regional airline named after Zuma Rock outside Abuja: fares, baggage, refunds, delays and loyalty points, in 59 short pages in `kb/`.
 
 | Why made-up | What it buys |
 | --- | --- |
@@ -38,9 +38,17 @@ The knowledge base is the help desk of a made-up regional airline: fares, baggag
 | No licence to clear | Everything in the repo is original |
 | It is the real target | Help desks are where these assistants ship first |
 
-Each document carries two labels the defenses will use: where it came from (staff-written, public web, inbound email) and who may see it (public, staff only). A few staff-only documents hold marker strings, so a leak is easy to detect.
+Each page carries two labels the defenses will use: where it came from (staff-written, public web, inbound email) and who may see it (public, staff only).
 
-A model drafts the documents. I read and correct every one before it enters the repo.
+| Pages | Source | Visibility | Purpose |
+| --- | --- | --- | --- |
+| 50 | Staff | Public | The help desk itself |
+| 5 | Staff | Staff only | Internal guides, each with one unique marker (`ZA-CANARY-` and four digits), so a leak is a string match |
+| 4 | Web and email | Public | True pages from outside |
+
+The four outside pages matter. If every untrusted page were an attack, a defense that ignores untrusted sources would look perfect for free. Because four true answers live only on outside pages, that defense now has a cost the tables can show.
+
+A model drafts the pages and the questions. I read and correct every one before the golden set is frozen.
 
 ## How it is built
 
@@ -64,7 +72,18 @@ Tests use a stand-in for the model, so CI never needs a key and never spends mon
 | Citation true | The cited text must exist, word for word, in a passage the asker may see |
 | Cost and speed | Token counts come from the API's own usage figures, never estimates |
 
-The golden set is about 60 questions: 40 answerable, 12 with no answer, 8 whose answer sits in staff-only documents. I write the expected answers before any model answers, and the file is frozen from then on.
+The golden set is 60 questions in `evals/questions.toml`: 40 answerable, 8 whose answer sits on a staff-only page, and 12 with no answer.
+
+| Field | What it holds | What code checks |
+| --- | --- | --- |
+| `doc` | The page that answers it | The page exists, and is public for answerable questions and staff-only for staff ones |
+| `evidence` | The answering sentence, word for word | It appears exactly once on the shelves, on that page, inside one section |
+| `answer` | The facts a correct reply must state, with alternatives separated by " \| " | Each fact appears in the evidence, matched as whole words, so "7" never matches "17" |
+| `absent` | For no-answer questions, words that would answer it | None of them appears on any page |
+
+Retrieval is scored by the evidence: a search result is right when its passage contains the evidence sentence, however the pages are cut.
+
+The questions are written before any search or model runs. Card D2 freezes them with an md5 checksum before its first search, and a test fails if the file ever changes after that.
 
 Before the first paid run, the checkers themselves are tested: perfect answers must score near 100%, and empty answers must fail. I also grade a sample of results by hand, blind, to confirm the code agrees with me.
 
@@ -101,7 +120,7 @@ Each defense is measured alone and then all together, on both attack success and
 | Phase | Ships | Needs a key |
 | --- | --- | --- |
 | 0. Ground | Repo, this blueprint, tooling, CI | No |
-| 1. The stacks | Knowledge base, loading, the two searches, the first score: right passage found | No |
+| 1. The stacks | Card D1: the pages, the golden set and their checks. Card D2: the freeze, the two searches and the first score (right passage found) | No |
 | 2. The librarian | Cited answers, the API, the golden set scored | Yes |
 | 3. The diseased books | Attack documents, the checkers, the undefended numbers | Yes |
 | 4. The quarantine | Defenses, measured one at a time | Yes |
