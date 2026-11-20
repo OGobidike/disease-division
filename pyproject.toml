@@ -4,7 +4,13 @@ version = "0.1.0"
 description = "A question-answering system I attack on purpose, then defend, with every result checked by code."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    # Search by meaning: FastEmbed runs the embedding model on ONNX Runtime, without PyTorch
+    "fastembed>=0.9",
+    # The store: Postgres through psycopg 3, with pgvector's types registered on each connection
+    "psycopg[binary]>=3.2",
+    "pgvector>=0.4",
+]
 
 [project.scripts]
 division = "disease_division.cli:main"

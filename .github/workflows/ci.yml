@@ -8,6 +8,26 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # The store tests need Postgres with pgvector: the same image docker-compose.yml runs.
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: division
+          POSTGRES_PASSWORD: division
+          POSTGRES_DB: division
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U division -d division"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      DIVISION_DB_URL: postgresql://division:division@localhost:5433/division
+      # On a laptop the store tests skip when no database is running. Here a missing database
+      # fails the run, so CI can never pass by quietly skipping them.
+      DIVISION_REQUIRE_DB: "1"
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
@@ -15,5 +35,6 @@ jobs:
       - run: uv sync --locked
       - run: uv run ruff check .
       - run: uv run ruff format --check .
-      # No test may reach the network: no key, no cost.
+      # No test may reach the internet: no key, no cost, and no model download (the tests use
+      # a stand-in for the model).
       - run: uv run pytest

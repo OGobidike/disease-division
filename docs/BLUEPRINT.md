@@ -91,7 +91,9 @@ What the audit left for Phase 2 to handle:
 - **Conditional answers.** q25 (a Granite member on a Peak fare enters the lounge free) and q27 (no hotel when weather cancels) have exceptions on the same page. A reply that adds the exception is right, not wrong.
 - **Restraint.** q54 (visas) and q60 (parking) sit next to things the pages do say. A good reply says what the pages cover and stops there.
 
-The questions are written before any search or model runs. Card D2 freezes them with an md5 checksum before its first search, and a test fails if the file ever changes after that.
+The questions were written before any search or model ran. On 2026-11-20, before the first search over them, Card D2 froze the questions and the pages with md5 checksums (`tests/test_freeze.py`), and a test fails if either ever changes.
+
+Retrieval is scored with settings fixed in advance, the same as Morning Manna's: BGE's question prefix, exact cosine search, keyword search that matches any word, and reciprocal rank fusion with the standard constant of 60. The [first score](../results/retrieval.md) found the right passage in the top 5 for 46 of 48 questions by meaning, 35 by keyword and 43 by the hybrid.
 
 Before the first paid run, the checkers themselves are tested: perfect answers must score near 100%, and empty answers must fail. I also grade a sample of results by hand, blind, to confirm the code agrees with me.
 
@@ -128,7 +130,7 @@ Each defense is measured alone and then all together, on both attack success and
 | Phase | Ships | Needs a key |
 | --- | --- | --- |
 | 0. Ground | Repo, this blueprint, tooling, CI | No |
-| 1. The stacks | Card D1: the pages, the golden set and their checks. Card D2: the freeze, the two searches and the first score (right passage found) | No |
+| 1. The stacks ✅ | Cards D1 and D1b: the pages, the golden set, its audit and checks. Card D2: the freeze, the two searches and the first score (right passage found) | No |
 | 2. The librarian | Cited answers, the API, the golden set scored | Yes |
 | 3. The diseased books | Attack documents, the checkers, the undefended numbers | Yes |
 | 4. The quarantine | Defenses, measured one at a time | Yes |

@@ -63,3 +63,25 @@ def test_shelf_catches_a_staff_section_without_its_control_number(tmp_path, caps
     assert "guide#2: every section of a staff-only page ends with ZA-DC-0002" in (
         capsys.readouterr().out
     )
+
+
+def test_store_commands_say_plainly_when_the_database_is_down(monkeypatch, capsys):
+    monkeypatch.setenv("DIVISION_DB_URL", "postgresql://division:division@127.0.0.1:1/division")
+    assert main(["score", "--kb", str(ROOT / "kb")]) == 1
+    assert "Could not reach the store" in capsys.readouterr().out
+
+
+def test_score_refuses_a_store_that_does_not_match_the_pages(
+    db, fake_embedder, monkeypatch, capsys
+):
+    from disease_division import store
+    from disease_division.cli import _store_matches
+    from disease_division.kb import load_documents
+
+    documents = load_documents(ROOT / "kb")
+    store.load(db, documents[:3], fake_embedder)
+    assert not _store_matches(db, documents, fake_embedder.model)
+    store.load(db, documents, fake_embedder)
+    assert _store_matches(db, documents, fake_embedder.model)
+    assert not _store_matches(db, documents, "another-model")
+    assert "Run: uv run division load" in capsys.readouterr().out
