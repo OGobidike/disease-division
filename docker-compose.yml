@@ -1,0 +1,26 @@
+# The Disease Division's one service: Postgres 16 with pgvector, which holds the passages, their
+# vectors and their keyword index. It is the same image Morning Manna uses, and it listens on
+# 5433 so the two databases can run side by side (Morning Manna's uses 5432).
+#
+#   docker compose up -d --wait db    start it, and wait until it accepts connections
+#   docker compose stop db            stop it; the data stays in the named volume
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: division
+      # A local-only database on 127.0.0.1, holding nothing private: not a secret.
+      POSTGRES_PASSWORD: division
+      POSTGRES_DB: division
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - division-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U division -d division"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  division-db:
