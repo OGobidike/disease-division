@@ -15,13 +15,13 @@ I'm building it for two kinds of people:
 
 ## 🗺️ Where it stands
 
-The shelves hold 59 help pages for a made-up airline, 60 frozen questions test against them, and search finds where the answers live. The librarian is built: it answers from what search finds, can cite the sentences it used, and code grades every reply. Its first paid run comes next.
+The shelves hold 59 help pages for a made-up airline, 60 frozen questions test against them, and search finds where the answers live. The librarian answers from what search finds and can cite the sentences it used, and code grades every reply. Its first score is in: **151 of 180 replies right (84%)**, for 8 cents. Undefended, it also leaks internal notes on 5 of the 8 questions it should decline.
 
 | Phase | What it ships | Status |
 | --- | --- | --- |
 | 0. Ground | The [blueprint](docs/BLUEPRINT.md), tooling and CI | ✅ Done |
 | 1. The stacks | The knowledge base, the golden questions and their audit, two kinds of search, and the [first score](results/retrieval.md) | ✅ Done |
-| 2. The librarian | Answers that cite their passage, and an API | 🔨 Under way: [the librarian](#-the-librarian) is built; its first scored run and the API come next |
+| 2. The librarian | Answers that cite their passage, and an API | 🔨 Under way: [the librarian](#-the-librarian) and [its first score](#-the-librarians-first-score) are in; the API comes next |
 | 3. The diseased books | The attacks, measured on the undefended system | Planned |
 | 4. The quarantine | The defenses, measured one at a time | Planned |
 | 5. The telling | The results, written up | Planned |
@@ -98,6 +98,33 @@ Whatever the question, a reply that lets staff-only content reach the asker is w
 
 Before the golden run, a pilot sends 20 [practice questions](evals/pilot.toml) that share no question, fact or answering passage with the golden set, to measure what a real call costs and to read real replies, so a problem can be fixed without anyone having seen a golden question answered. Each reply is saved to `results/runs/` the moment it arrives, with a fingerprint of the settings that made it. A run never mixes replies made under different settings, the report is rebuilt from that record, and every run stops at a budget.
 
+## 🧮 The librarian's first score
+
+`claude-haiku-5-5` answered the 60 golden questions 3 times each on 2026-11-23: 180 replies, graded by code. The [full report](results/answers-haiku-5-5.md) lists every check and every question with a wrong reply; the replies themselves are in [`results/runs/`](results/runs).
+
+| Questions | Right means | Right replies | Right every time |
+| --- | --- | --- | --- |
+| Answerable, help-desk pages (36) | States the expected facts | 93 of 108 (86%) | 30 of 36 |
+| Answerable, outside pages (4) | The same, from a web or email page | 11 of 12 (92%) | 3 of 4 |
+| Staff only (8) | Declines | 11 of 24 (46%) | 3 of 8 |
+| No answer (12) | Declines | 36 of 36 (100%) | 12 of 12 |
+| **All 60** | | **151 of 180 (84%)** | 48 of 60 |
+
+What it shows:
+
+- **The librarian is good; search is the weak link.** When search showed it the passage with the answer, it was right 104 times in 108. Search never showed it the answer to four questions (q17, q33, q34 and q36), and it declined all 12 of those replies rather than invent one.
+- **Where the pages had no answer, it said so.** All 36 no-answer replies declined, and none of the yes-or-no replies opened with the wrong one.
+- **Undefended, it leaks.** 13 replies, on 5 of the 8 staff-only questions, gave a customer internal content: a fee-waiver code, overbooking rates, who signs off goodwill payments. Every passage it leaked from arrived titled as a staff guide ("Staff guide: overbooking levels", for example), and it shared the contents anyway. This is the number Phase 4's defenses have to bring down.
+- **Memory alone gets 17%.** With no pages at all, the same model stated the expected fact in 20 of 120 replies. The five questions it got right every time are rules many airlines share, such as two power banks, checking in 24 hours ahead and 6 months' passport validity. That gap, 17% without the pages against 87% with them, is what the pages are worth.
+- **The answers stand on their own words.** Claude often ends a reply by quoting the source sentence it cited. 103 of the 104 right answers also state the fact in their own words, so the grades don't rest on the quotes.
+- **It costs very little.** The golden run cost $0.079 (1,924 tokens in and 489 out per call), the closed-book run $0.020 and the pilot $0.007. The blueprint's full grid of 2,520 calls comes to about $1.10 at this size.
+
+### Checked by a person
+
+- **A blind sample.** Before the report was run, I graded 20 replies drawn at random by a fixed seed (20261123, the day's date, set before the run), without seeing the code's verdicts. We agreed on all 20 (Cohen's kappa 1.00). With a sample this size, that means the true agreement is likely at least 83%.
+- **Every disputable wrong.** I then read each reply the code marked wrong that wasn't a leak or a search miss. Two of the four were right to a person: q05's "up to three misspelt letters" fails the match for "three letters". By a person's reading the score is 153 of 180 (85%). The code errs on the strict side: in the blind sample, I marked none of the 18 replies it called right as wrong.
+- **[The hard calls](docs/HARD-CALLS.md)** gathers six cases from real replies where the right mark isn't obvious, and the rule that settles each: a true answer too vague to act on, a correct answer that leaks, a messy answer that is right, and more.
+
 ## 🚀 Try it
 
 You need [uv](https://docs.astral.sh/uv/).
@@ -129,14 +156,15 @@ To ask the librarian, you also need an Anthropic API key. Copy `.env.example` to
 uv run division ask "can I bring my guitar on board"
 uv run division pilot
 uv run division answer
+uv run division sheet
 uv run division report
 ```
 
-`ask` answers one question and shows its citations and cost. `pilot` runs the 20 practice questions and says what the golden run will cost. `answer` asks the 60 golden questions 3 times each; it stops at $0.50 unless you pass `--budget`, and if it stops for any reason, running it again picks up where it stopped. `report` grades the replies and writes `results/answers-haiku-5-5.md`. On the blueprint's guessed sizes the golden run costs about 10 cents; the pilot measures the real figure.
+`ask` answers one question and shows its citations and cost. `pilot` runs the 20 practice questions and says what the golden run will cost. `answer` asks the 60 golden questions 3 times each; it stops at $0.50 unless you pass `--budget`, and if it stops for any reason, running it again picks up where it stopped. `sheet` writes 20 replies, drawn by a fixed seed, for a person to grade blind; grade them before reading the report. `report` grades every reply, sets the hand grades against the code's, and writes `results/answers-haiku-5-5.md`. The golden run costs about 8 cents.
 
 ## ✅ Tested
 
-- ✅ **189 tests**, run by CI on every push and pull request
+- ✅ **205 tests**, run by CI on every push and pull request
 - ✅ **The store tests run against a real Postgres with pgvector**, each in a throwaway database, created for the test and dropped after it. CI starts its own database and fails if it can't reach it; on a laptop without one, those 10 tests skip.
 - ✅ **The golden set is frozen.** A test checks the checksums of the questions and the pages, set before the first search ran, and of the yes-or-no verdicts, set before any model answered.
 - ✅ **Every answer checker is tested against the fault it exists to catch**: the right facts with the wrong yes or no, a staff fact stated with no citation (on any question), a control number, a citation of a staff page, a citation that points at the wrong passage or quotes altered text, and a run resumed under changed settings

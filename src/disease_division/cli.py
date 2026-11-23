@@ -380,17 +380,43 @@ def report(model_name, kb, questions_path, verdicts_path, folder, out) -> int:
     documents = load_documents(kb)
     questions = load_questions(questions_path)
     verdicts = load_verdicts(verdicts_path)
+    tag = running.short(model_name)
     try:
-        text = running.report(records, closed, questions, documents, verdicts)
+        hand = running.read_marks(out / f"hand-grades-{tag}.toml")
+        rechecks = running.read_marks(out / f"rechecks-{tag}.toml")
+        text = running.report(records, closed, questions, documents, verdicts, hand, rechecks)
     except ValueError as error:
         print(f"Can't report: {error}.")
         return 1
     out.mkdir(parents=True, exist_ok=True)
-    name = f"answers-{running.short(model_name)}"
+    name = f"answers-{tag}"
     (out / f"{name}.md").write_text(text, encoding="utf-8")
     running.write_csv(out / f"{name}.csv", records, questions, documents, verdicts)
     print(text)
     print(f"Written to {out / (name + '.md')} and {out / (name + '.csv')}.")
+    return 0
+
+
+def write_sheet(model_name, questions_path, verdicts_path, folder, out) -> int:
+    """Write the blind grading sheet for a finished golden run. Run it before the report, and
+    grade the sheet before reading the report, so the code's verdicts are never seen."""
+    from disease_division import run as running
+    from disease_division.grade import load_verdicts
+
+    path = out / f"hand-grades-{running.short(model_name)}.toml"
+    if path.exists():
+        print(f"{path} is already there, so it was left as it is.")
+        return 1
+    records = running.read_records(running.run_path(folder, "golden", model_name))
+    questions = load_questions(questions_path)
+    wanted = len(questions) * max((r["repeats"] for r in records), default=0)
+    if not records or len(records) < wanted:
+        print(f"The golden run has {len(records)} of {wanted or '?'} replies, so no sheet was"
+              " written. Finish it first: uv run division answer")  # fmt: skip
+        return 1
+    out.mkdir(parents=True, exist_ok=True)
+    path.write_text(running.sheet(records, questions, load_verdicts(verdicts_path)), "utf-8")
+    print(f"Wrote {path}: {running.SAMPLE} replies to grade by hand, before reading the report.")
     return 0
 
 
@@ -439,6 +465,12 @@ def main(argv: list[str] | None = None) -> int:
     report_parser.add_argument("--runs", type=Path, default=RUNS)
     report_parser.add_argument("--out", type=Path, default=Path("results"))
     model_option(report_parser)
+    sheet_parser = commands.add_parser("sheet", help="write the blind hand-grading sheet")
+    sheet_parser.add_argument("--questions", type=Path, default=QUESTIONS)
+    sheet_parser.add_argument("--verdicts", type=Path, default=VERDICTS)
+    sheet_parser.add_argument("--runs", type=Path, default=RUNS)
+    sheet_parser.add_argument("--out", type=Path, default=Path("results"))
+    model_option(sheet_parser)
 
     args = parser.parse_args(argv)
     if args.command == "shelf":
@@ -453,6 +485,8 @@ def main(argv: list[str] | None = None) -> int:
         return ask(args.question, args.model, args.kb, args.closed_book)
     if args.command == "pilot":
         return pilot(args.model, args.kb, args.runs, args.budget)
+    if args.command == "sheet":
+        return write_sheet(args.model, args.questions, args.verdicts, args.runs, args.out)
     if args.command == "answer":
         return answer(
             args.model,

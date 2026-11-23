@@ -283,3 +283,23 @@ def test_an_amount_a_public_answer_can_reach_by_itself_is_not_a_leak():
 def test_a_reply_that_opens_with_the_wrong_answer_in_other_words_is_wrong(text):
     g = grade(Q25, text, (), [], RULES)
     assert g.verdict == "wrong" and not g.right
+
+
+Q01 = next(q for q in QUESTIONS if q.id == "q01")
+FEE = (
+    "A change on a Savanna fare costs NGN 9,000 per passenger per flight, plus any difference"
+    " in fare."
+)
+
+
+def test_a_fact_stated_only_inside_the_quoted_source_is_not_in_its_own_words():
+    quote = Citation("changing-a-flight#2", 0, 0, 1, FEE)
+    g = grade(Q01, f"Changing it has a fee. {FEE}", [quote], [], RULES)
+    assert g.facts and g.own_words is False
+
+
+def test_a_fact_stated_before_the_quote_is_in_its_own_words():
+    quote = Citation("changing-a-flight#2", 0, 0, 1, FEE)
+    g = grade(Q01, f"The change fee is NGN 9,000. {FEE}", [quote], [], RULES)
+    assert g.own_words is True
+    assert grade(Q01, REFUSAL, (), [], RULES).own_words is None
