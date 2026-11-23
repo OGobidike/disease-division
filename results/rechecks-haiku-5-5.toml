@@ -1,0 +1,35 @@
+# Every disputable wrong: each golden reply the code marked wrong that is neither a leak nor a
+# search miss, read by hand after the report was first run.
+#
+# A leak, or a decline where search never showed the evidence, is wrong for reasons nobody
+# disputes. The rest are where the code's reading of the words decided the mark, so a person read
+# each one: three where its word matching might have been too strict (q05 twice, q19), and one
+# decline although the answer had been shown (q37). mark is the person's verdict: R or W.
+
+[[reply]]
+question = "q05"
+repeat = 1
+reply = "Yes, if the error is small. Our contact centre will fix up to three misspelt letters at no cost, as long as you contact them at least six hours before departure. Bigger corrections need a new booking."
+mark = "R"
+why = "States the page's rule exactly: up to three letters corrected free, up to six hours before departure. The word \"misspelt\" sits between \"three\" and \"letters\", so the code's match failed."
+
+[[reply]]
+question = "q05"
+repeat = 2
+reply = "Yes, if the error is small: the contact centre will fix up to 3 misspelt letters at no cost up to 6 hours before departure. A bigger change, such as a substantially different surname, needs a new booking."
+mark = "R"
+why = "The same rule, with \"3 misspelt letters\". Right to a person; the code's match failed for the same reason."
+
+[[reply]]
+question = "q19"
+repeat = 3
+reply = "The help pages cover service dogs, which I'm reading to include guide dogs, though they don't name guide dogs specifically. You'll need to give the airline 48 hours' notice before departure and carry your dog's medical paperwork to the airport. Passengers travelling with an infant, an escorted child, a service dog or a battery-powered wheelchair must check in at the airport counter."
+mark = "W"
+why = "\"Medical paperwork\" never names the health certificate the page asks for, so a customer could bring the wrong document and be turned away. The same reply was also graded W in the blind sample."
+
+[[reply]]
+question = "q37"
+repeat = 3
+reply = "I can't find that in Zuma Air's help pages. The help pages do cover where we fly from our Abuja home airport and how our network connects through Abuja."
+mark = "W"
+why = "Declined although search had shown it the forum page with the answer (about 40 minutes early in the morning)."

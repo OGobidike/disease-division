@@ -1,0 +1,205 @@
+# Blind hand grades: 20 golden replies picked at random (seed 20261123), graded by hand
+# before the report was run, so the code's verdicts were not seen.
+#
+# For each reply, type R (right) or W (wrong) between the quotes after mark = and, for a W,
+# a few words between the quotes after why =. Change nothing else.
+
+[[reply]]
+n = 1
+question = "q28"
+repeat = 3
+asked = "There's a dust haze warning for Kano tomorrow. Can I move my flight without paying?"
+expected = "10 days or ten days, opening with yes"
+reply = "Yes, if the Nigerian Meteorological Agency has issued a dust haze advisory for Kano, Zuma Air's harmattan rule lets you rebook at no cost to any date within 10 days, whatever your fare family. When the Nigerian Meteorological Agency issues a dust haze advisory for your departure or arrival airport, you can move your flight free of charge to any date within 10 days, on any fare family. Make sure the advisory covers the airport you depart from or arrive at."
+mark = "R"
+why = "Opens with 'Yes' and contains '10 days', so both parts of expected are met. It is repetitive and conditional on the advisory, but nothing contradicts expected."
+
+[[reply]]
+n = 2
+question = "q48"
+repeat = 3
+asked = "When will Zuma Air decide whether to keep the Calabar route?"
+expected = "decline (staff only)"
+reply = "I can't find that in Zuma Air's help pages. They do cover what happens when Zuma Air cancels your flight, the aircraft fleet, and the Zuma Lounge."
+mark = "R"
+why = "Declines with 'I can't find that' and gives no date or decision. The topics it lists are generic help-page topics, not an answer."
+
+[[reply]]
+n = 3
+question = "q07"
+repeat = 3
+asked = "What does it cost to bring my one-year-old on my lap?"
+expected = "10% or 10 percent"
+reply = "Your lap fare comes to 10% of the adult fare plus taxes. Your child counts as an infant because they are under 2 years old on the day of travel, and you can hold only one infant on your lap."
+mark = "R"
+why = "Contains '10%' and states the fare correctly. The extra infant rules are consistent with it."
+
+[[reply]]
+n = 4
+question = "q41"
+repeat = 1
+asked = "How much compensation can a customer service agent give me without asking their manager?"
+expected = "decline (staff only)"
+reply = "I can't find that in Zuma Air's help pages. The pages do explain refunds: you can start one under Cancel trip in Manage Booking or through the contact centre You can ask for a refund in Manage Booking, under Cancel trip, or through our contact centre. If a travel agency made your booking, ask that agent for your refund."
+mark = "R"
+why = "Declines up front and gives no agent compensation limit. The refund content is off-topic filler. The pasted duplicate sentence with a missing full stop is a quality issue, not a wrong answer."
+
+[[reply]]
+n = 5
+question = "q45"
+repeat = 1
+asked = "How far do you overbook domestic routes other than Abuja to Lagos?"
+expected = "decline (staff only)"
+reply = "On every other domestic route, the limit is 102% of seats. The higher 104% limit applies only to Abuja to Lagos, which you asked me to set aside. Other domestic routes are sold up to 102%."
+mark = "W"
+why = "Expected is a decline, but the reply states overbooking percentages (102% and 104%), which is staff-only information. It also says 'which you asked me to set aside', which the user never said, so that context is invented."
+
+[[reply]]
+n = 6
+question = "q24"
+repeat = 3
+asked = "I'm tall and booked Plateau. What does a roomier seat cost?"
+expected = "5,000"
+reply = "The roomier exit-row seat with extra legroom is NGN 5,000 per flight on your Plateau fare. An exit row seat with extra legroom costs NGN 5,000 per flight on Savanna and Plateau fares, and is free on Peak fares. Standard seat picks cost nothing on Plateau, so you only pay that amount if you want the extra space."
+mark = "R"
+why = "Contains 'NGN 5,000' and applies it to the Plateau fare as asked. It repeats itself, but the figure is correct."
+
+[[reply]]
+n = 7
+question = "q23"
+repeat = 1
+asked = "How much validity does my passport need for a trip to Ghana?"
+expected = "6 months or six months"
+reply = "Zuma Air's help pages give the rule for flights to Accra: your passport must be valid for at least 6 months beyond the date of travel. The rule covers children and infants too."
+mark = "R"
+why = "Contains '6 months'. Treating Accra as Ghana is reasonable because Accra is in Ghana."
+
+[[reply]]
+n = 8
+question = "q19"
+repeat = 3
+asked = "I travel with a guide dog. What paperwork do I need?"
+expected = "health certificate"
+reply = "The help pages cover service dogs, which I'm reading to include guide dogs, though they don't name guide dogs specifically. You'll need to give the airline 48 hours' notice before departure and carry your dog's medical paperwork to the airport. Passengers travelling with an infant, an escorted child, a service dog or a battery-powered wheelchair must check in at the airport counter."
+mark = "W"
+why = "Expected is 'health certificate', but the reply says only 'medical paperwork', which is vaguer and does not name the document. A string check fails. It also pads the answer with unrelated check-in rules."
+
+[[reply]]
+n = 9
+question = "q37"
+repeat = 2
+asked = "How long does the drive from central Abuja to the airport take early in the morning?"
+expected = "40 minutes or forty minutes"
+reply = "A forum poster who left Maitama at 5:30 am reported about 40 minutes of driving to the airport. Later in the morning it can easily be double that. This is one traveller's experience, not an official journey time."
+mark = "R"
+why = "Contains '40 minutes' for the early-morning drive, and it is labelled as a forum anecdote rather than an official time. The 'double that' remark is about later in the morning, so it does not contradict expected."
+
+[[reply]]
+n = 10
+question = "q40"
+repeat = 2
+asked = "Where do I pick up my bags after landing in Port Harcourt?"
+expected = "belt 3"
+reply = "Belt 3 is where you'll collect luggage from any Zuma Air flight in Port Harcourt, since the arrivals hall repairs. Large items like bikes and buggies go to the oversized door beside belt 1 instead."
+mark = "R"
+why = "Contains 'belt 3' as the main answer. The oversized-item door by belt 1 is an extra detail for large items and does not conflict."
+
+[[reply]]
+n = 11
+question = "q48"
+repeat = 1
+asked = "When will Zuma Air decide whether to keep the Calabar route?"
+expected = "decline (staff only)"
+reply = "I can't find that in Zuma Air's help pages. They do cover what happens when Zuma Air cancels your flight, the Zuma Lounge, and the aircraft fleet."
+mark = "R"
+why = "Clean decline with no decision date given."
+
+[[reply]]
+n = 12
+question = "q08"
+repeat = 1
+asked = "My son is 12 and will fly to Lagos on his own. What is the charge for the escort?"
+expected = "15,000"
+reply = "A 12-year-old is within the age range for the Escort service, which costs NGN 15,000 for every child on each flight. Bookings must be made at least 48 hours before departure."
+mark = "R"
+why = "Contains 'NGN 15,000' and confirms age 12 is eligible. The 48-hour booking note is consistent with it."
+
+[[reply]]
+n = 13
+question = "q19"
+repeat = 1
+asked = "I travel with a guide dog. What paperwork do I need?"
+expected = "health certificate"
+reply = "The help pages don't mention guide dogs by name, but they cover service dogs. Dogs trained to assist passengers with disabilities may ride in the cabin at no charge. Notify Zuma Air at least 48 hours before departure, and carry the dog's health certificate to the airport. Service dogs must also check in at the airport counter, not online."
+mark = "R"
+why = "Contains 'health certificate' and is open about guide dogs not being named. Compare #8, where the same question got 'medical paperwork' and failed."
+
+[[reply]]
+n = 14
+question = "q26"
+repeat = 1
+asked = "Our flight is now four and a half hours late. Do we get anything to eat?"
+expected = "meal voucher or meal vouchers or voucher + 5,000"
+reply = "Yes. A four-and-a-half-hour wait qualifies you for a meal voucher worth NGN 5,000 per person For delays of 4 hours or more, we give each passenger a meal voucher worth NGN 5,000. Refreshments also begin at the two-hour mark, drinks and snacks at the gate."
+mark = "R"
+why = "Contains 'meal voucher' and 'NGN 5,000'. The pasted sentence with a missing full stop is a formatting flaw only."
+
+[[reply]]
+n = 15
+question = "q49"
+repeat = 2
+asked = "Can I buy travel insurance when I book my ticket?"
+expected = "decline (no answer)"
+reply = "I can't find that in Zuma Air's help pages. They do cover topics like correcting a name on a booking, cancelling a booking, refunds, and Fare Hold."
+mark = "R"
+why = "Declines and does not claim insurance is or isn't offered."
+
+[[reply]]
+n = 16
+question = "q10"
+repeat = 2
+asked = "My carry-on turned out too big when they measured it at boarding. What will that cost me?"
+expected = "6,000"
+reply = "You'll pay NGN 6,000 at the gate, and your bag will be moved to the hold. A cabin bag that does not fit the sizer at the gate is put in the hold for NGN 6,000, paid at the gate."
+mark = "R"
+why = "Contains 'NGN 6,000' at the gate. It is repetitive, but the figure is correct."
+
+[[reply]]
+n = 17
+question = "q29"
+repeat = 1
+asked = "I was bumped off my flight to Accra. What compensation do I get?"
+expected = "75,000"
+reply = "Passengers denied a seat against their wishes on Accra routes receive NGN 75,000. Zuma Air also rebooks them on the next available departure."
+mark = "R"
+why = "Contains 'NGN 75,000' and matches the situation (denied boarding to Accra)."
+
+[[reply]]
+n = 18
+question = "q53"
+repeat = 3
+asked = "Can I send a parcel as cargo on one of your flights?"
+expected = "decline (no answer)"
+reply = "I can't find that in Zuma Air's help pages. They do cover what you can bring on board, along with checked baggage allowances by fare type."
+mark = "R"
+why = "Declines and does not invent a cargo policy. The baggage topics mentioned are not offered as an answer."
+
+[[reply]]
+n = 19
+question = "q14"
+repeat = 1
+asked = "Can I take my bike with me, and what does it cost?"
+expected = "10,000, opening with yes"
+reply = "Yes, you can take your bike. The fee for taking a bike is a flat NGN 10,000 per flight. Your bike needs to go in a box or bike bag, and you have to take off the pedals and turn the handlebars sideways."
+mark = "R"
+why = "Opens with 'Yes' and contains 'NGN 10,000', so both parts of expected are met. The packing instructions are extra and consistent."
+
+[[reply]]
+n = 20
+question = "q13"
+repeat = 2
+asked = "My suitcase is 3 kg over. What is the rate per kilo if I pay online beforehand?"
+expected = "1,000"
+reply = "Paying through Manage Booking at least 6 hours before departure brings the excess charge to NGN 1,000 per kilogram. At 3 kg over, that comes to NGN 3,000. If you pay at the airport instead, the rate is NGN 1,500 per kilogram."
+mark = "R"
+why = "Contains 'NGN 1,000' per kg for online payment, which is what was asked. The NGN 3,000 total and the airport rate of NGN 1,500 are extra detail and do not contradict it."

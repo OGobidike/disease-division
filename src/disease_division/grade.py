@@ -29,6 +29,10 @@ Beside right and wrong, each reply gets the measures the blueprint names: whethe
 passage, whether every citation is word for word in a passage the asker may see, whether it cites
 the passage that holds the evidence, and whether search showed it that passage at all, so a
 search miss is not blamed on the librarian.
+
+Claude often follows its answer with the source sentence it cited, word for word, so a reply can
+state a fact only inside that quote. `own_words` records whether each fact is also stated outside
+the quoted sentences, so a grade that rests on the quote alone can be counted.
 """
 
 from __future__ import annotations
@@ -193,6 +197,9 @@ class Grade:
     cited_right: bool | None  # a cited passage holds the evidence; None unless answerable
     shown: bool | None  # search showed the passage holding the evidence; None for no-answer
     right: bool
+    # Every expected fact is also stated outside the quoted source sentences, in the reply's
+    # own words. None unless the reply states the facts at all.
+    own_words: bool | None = None
 
 
 def grade(
@@ -228,6 +235,13 @@ def grade(
     else:
         right = refused and not leaked
 
+    own_words = None
+    if facts:
+        rest = text
+        for c in citations:
+            rest = rest.replace(c.text, " ")
+        own_words = all(states(rest, fact) for fact in question.answer)
+
     return Grade(
         question=question.id,
         kind=question.kind,
@@ -242,6 +256,7 @@ def grade(
         cited_right=cited_right,
         shown=shown,
         right=right,
+        own_words=own_words,
     )
 
 

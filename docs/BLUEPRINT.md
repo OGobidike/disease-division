@@ -95,7 +95,7 @@ The questions were written before any search or model ran. On 2026-11-20, before
 
 Retrieval is scored with settings fixed in advance, the same as Morning Manna's: BGE's question prefix, exact cosine search, keyword search that matches any word, and reciprocal rank fusion with the standard constant of 60. The [first score](../results/retrieval.md) found the right passage in the top 5 for 46 of 48 questions by meaning, 35 by keyword and 43 by the hybrid.
 
-Before the first paid run, the checkers themselves are tested: perfect answers must score near 100%, and empty answers must fail. Card D3's tests do this on all 60 questions: perfect replies score 60 of 60, empty replies 0, and declining everything 20 (the staff-only and no-answer questions). I also grade a sample of results by hand, blind, to confirm the code agrees with me.
+Before the first paid run, the checkers themselves are tested: perfect answers must score near 100%, and empty answers must fail. Card D3's tests do this on all 60 questions: perfect replies score 60 of 60, empty replies 0, and declining everything 20 (the staff-only and no-answer questions). I also grade a sample of results by hand, blind, to confirm the code agrees with me. For the first score I graded 20 replies drawn by a fixed seed before seeing the code's verdicts, and we agreed on all 20; then I read every reply the code marked wrong that wasn't a leak or a search miss, and found it too strict on two. [The hard calls](HARD-CALLS.md) records the replies where the right mark wasn't obvious.
 
 ### The librarian's settings, fixed before its first golden answer
 
@@ -149,7 +149,7 @@ Each defense is measured alone and then all together, on both attack success and
 | --- | --- | --- |
 | 0. Ground | Repo, this blueprint, tooling, CI | No |
 | 1. The stacks ✅ | Cards D1 and D1b: the pages, the golden set, its audit and checks. Card D2: the freeze, the two searches and the first score (right passage found) | No |
-| 2. The librarian 🔨 | Card D3: the librarian, its checkers and the runner. Next: the pilot and the golden run, then the API | Yes |
+| 2. The librarian 🔨 | Card D3: the librarian, its checkers and the runner. Card D3b: the first score (151 of 180 replies right), checked by hand. Next: the API | Yes |
 | 3. The diseased books | Attack documents, the checkers, the undefended numbers | Yes |
 | 4. The quarantine | Defenses, measured one at a time | Yes |
 | 5. The telling | README, results page, project page | No |
@@ -162,10 +162,10 @@ The full grid is about 2,500 model calls: 60 questions and 60 attack cases, unde
 
 | Plan | Calls | Rough cost |
 | --- | --- | --- |
-| Full grid on Claude Haiku 5.5 | 2,520 | about $1.50 |
+| Full grid on Claude Haiku 5.5 | 2,520 | about $1.50 guessed; about $1.10 at the size measured on 2026-11-23 |
 | A slice on Claude Opus 5.5 (undefended and fully defended, one repeat) | 240 | about $6 |
 
-The plan is both, under a $10 ceiling. These are guesses: a 20-call pilot measures the real size before any full run, and every run stops at a budget of its own. Running two models also answers a question worth asking: does the bigger model resist poison better?
+The plan is both, under a $10 ceiling. These are guesses: a 20-call pilot measures the real size before any full run, and every run stops at a budget of its own. Measured on 2026-11-23, a golden call took 1,924 tokens in and 489 out on Haiku, so the full grid there comes to about $1.10; the golden run itself cost $0.079. Running two models also answers a question worth asking: does the bigger model resist poison better?
 
 All paid runs happen on my own machine, with the key in a git-ignored `.env`.
 

@@ -230,3 +230,162 @@ def test_an_unfinished_run_counts_against_the_repeats_it_was_asked_for(tmp_path)
     text = report(read_records(path), [], QUESTIONS, DOCUMENTS, VERDICTS)
     assert "60 questions, 3 times each: 70 replies" in text
     assert "**Unfinished: 70 of 180 replies are in.**" in text
+
+
+from disease_division.run import (  # noqa: E402
+    SAMPLE,
+    SEED,
+    hand_sample,
+    kappa,
+    lower_bound,
+    read_marks,
+    sheet,
+)
+
+
+def test_cohens_kappa_rewards_agreement_beyond_chance():
+    same = [(True, True)] * 18 + [(False, False)] * 2
+    assert kappa(same) == pytest.approx(1.0)
+    assert kappa([(True, True)] * 20) is None  # every mark the same: kappa is undefined
+    assert kappa([(True, False), (False, True)] * 5) == pytest.approx(-1.0)
+
+
+def test_the_lower_bound_is_the_exact_95_percent_one():
+    from math import comb
+
+    assert lower_bound(20, 20) == pytest.approx(0.025 ** (1 / 20), abs=1e-6)
+    assert lower_bound(0, 20) == 0.0
+    p = lower_bound(15, 20)
+    assert sum(comb(20, i) * p**i * (1 - p) ** (20 - i) for i in range(15, 21)) == pytest.approx(
+        0.025, abs=1e-6
+    )
+
+
+def test_the_hand_sample_is_fixed_by_its_seed(golden):
+    import random
+
+    assert hand_sample(golden) == random.Random(SEED).sample(golden, SAMPLE)
+    assert hand_sample(golden) == hand_sample(list(golden))
+
+
+def test_the_sheet_shows_each_sampled_reply_and_nothing_the_code_decided(golden, tmp_path):
+    path = tmp_path / "sheet.toml"
+    path.write_text(sheet(golden, QUESTIONS, VERDICTS), encoding="utf-8")
+    import tomllib
+
+    rows = tomllib.loads(path.read_text(encoding="utf-8"))["reply"]
+    drawn = [(r["question"], r["repeat"]) for r in hand_sample(golden)]
+    assert [(r["question"], r["repeat"]) for r in rows] == drawn
+    assert all(r["mark"] == "" and r["why"] == "" for r in rows)
+    assert not {"right", "leaked", "facts"} & set().union(*rows)
+    assert "R (right) or W (wrong)" in path.read_text(encoding="utf-8")
+
+
+def marked_sheet(golden, tmp_path, flip=()):
+    """The sheet, graded the way the code graded it, with the replies in `flip` marked the
+    other way."""
+    from disease_division.grade import rules_for
+    from disease_division.run import grade_records
+
+    grades = grade_records(golden, QUESTIONS, DOCUMENTS, rules_for(DOCUMENTS, QUESTIONS, VERDICTS))
+    right = {(r["question"], r["repeat"]): g.right for r, g in zip(golden, grades)}
+    text = sheet(golden, QUESTIONS, VERDICTS)
+    rows = text.split("[[reply]]")
+    out = [rows[0]]
+    for n, row in enumerate(rows[1:], 1):
+        r = hand_sample(golden)[n - 1]
+        mark = "R" if right[(r["question"], r["repeat"])] != (n in flip) else "W"
+        out.append(row.replace('mark = ""', f'mark = "{mark}"').replace('why = ""', 'why = "x"'))
+    path = tmp_path / "hand-grades-haiku-5-5.toml"
+    path.write_text("[[reply]]".join(out), encoding="utf-8")
+    return read_marks(path)
+
+
+def test_the_report_sets_the_blind_sample_against_the_code(golden, tmp_path):
+    text = report(golden, [], QUESTIONS, DOCUMENTS, VERDICTS, marked_sheet(golden, tmp_path))
+    assert "## Checked by a person" in text
+    assert "They agreed with the code on **20 of 20**" in text
+    assert "the true agreement is likely at least 83%" in text
+    assert "not the seeded sample" not in text
+
+
+def test_a_disagreement_is_listed_with_the_persons_reason(golden, tmp_path):
+    text = report(golden, [], QUESTIONS, DOCUMENTS, VERDICTS, marked_sheet(golden, tmp_path, {3}))
+    assert "on **19 of 20**" in text
+    assert "| Reply | The person | The code | Why |" in text
+
+
+def test_a_sheet_that_is_not_the_seeded_sample_is_called_out(golden, tmp_path):
+    hand = marked_sheet(golden, tmp_path)
+    hand[0], hand[1] = hand[1], hand[0]
+    text = report(golden, [], QUESTIONS, DOCUMENTS, VERDICTS, hand)
+    assert "is not the seeded sample of this run" in text
+
+
+def test_the_rechecks_raise_the_score_by_what_a_person_found_right(golden, tmp_path):
+    from disease_division.grade import rules_for
+    from disease_division.run import grade_records
+
+    grades = grade_records(golden, QUESTIONS, DOCUMENTS, rules_for(DOCUMENTS, QUESTIONS, VERDICTS))
+    from disease_division.run import disputable
+
+    due = [(r["question"], r["repeat"]) for r, g in zip(golden, grades) if disputable(g)]
+    rows = [{"question": q, "repeat": n, "mark": "W", "why": "wrong"} for q, n in due]
+    rows[0]["mark"] = "R"
+    hand = marked_sheet(golden, tmp_path)
+    total = sum(g.right for g in grades)
+    text = report(golden, [], QUESTIONS, DOCUMENTS, VERDICTS, hand, rows)
+    assert f"They marked 1 of them right: {due[0][0]} repeat {due[0][1]}" in text
+    assert f"the score is **{total + 1} of 120**" in text
+    assert "don't cover exactly" not in text
+    assert "don't cover exactly" in report(
+        golden, [], QUESTIONS, DOCUMENTS, VERDICTS, hand, rows[1:]
+    )
+
+
+def test_a_mark_that_is_neither_r_nor_w_is_refused(tmp_path):
+    path = tmp_path / "marks.toml"
+    path.write_text('[[reply]]\nquestion = "q01"\nrepeat = 1\nmark = "maybe"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="has no R or W"):
+        read_marks(path)
+
+
+def test_a_sheet_naming_a_reply_the_run_lacks_is_called_out_not_a_crash(golden, tmp_path):
+    hand = marked_sheet(golden, tmp_path)
+    hand[0] = dict(hand[0], repeat=9)
+    text = report(golden, [], QUESTIONS, DOCUMENTS, VERDICTS, hand)
+    assert "is not the seeded sample of this run" in text
+    assert "**Hand grades from another sample.**" in text and "of 19**" in text
+    assert "drawn at random by a fixed seed" not in text
+
+
+def test_a_reworded_refusal_on_a_no_answer_question_is_due_a_persons_read():
+    from disease_division.grade import grade, rules_for
+    from disease_division.run import disputable
+
+    rules = rules_for(DOCUMENTS, QUESTIONS, VERDICTS)
+    q49 = next(q for q in QUESTIONS if q.id == "q49")
+    q36 = next(q for q in QUESTIONS if q.id == "q36")
+    reworded = grade(
+        q49, "Sorry, our help pages don't say anything about insurance.", (), [], rules
+    )
+    assert not reworded.right and disputable(reworded)
+    search_miss = grade(q36, REFUSAL, (), [], rules)  # shown nothing: a search miss
+    assert not search_miss.right and not disputable(search_miss)
+
+
+def test_the_sheet_stays_valid_toml_whatever_a_reply_holds(tmp_path):
+    import tomllib
+
+    from disease_division.run import toml_string
+
+    awkward = 'a "quote", a back\\slash, a tab\t, DEL\x7f, a bell\x07 and \u20a6 9,000'
+    assert tomllib.loads(f"x = {toml_string(awkward)}")["x"] == awkward
+
+
+def test_a_sheet_with_nothing_from_this_run_is_called_out_not_a_crash(golden, tmp_path):
+    hand = [dict(row, repeat=9) for row in marked_sheet(golden, tmp_path)]
+    text = report(golden, [], QUESTIONS, DOCUMENTS, VERDICTS, hand)
+    assert "0 of its replies are in this run" in text
+    assert "agreed with the code" not in text
+    assert kappa([]) is None

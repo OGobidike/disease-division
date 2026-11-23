@@ -16,10 +16,13 @@ from __future__ import annotations
 
 import csv
 import json
+import random
+import tomllib
 from collections import Counter
 from collections.abc import Callable
 from dataclasses import asdict
 from datetime import datetime, timezone
+from math import comb
 from pathlib import Path
 
 from disease_division.golden import Question
@@ -39,6 +42,9 @@ from disease_division.librarian import (
 from disease_division.score import share
 
 GRID_CALLS = 2_520  # the blueprint's full grid: 60 questions and 60 attacks, 7 settings, 3 repeats
+# The blind hand-graded sample: its size, and its seed (the date of the first golden run, chosen
+# before that run was made).
+SAMPLE, SEED = 20, 20261123
 
 
 def short(model: str) -> str:
@@ -201,15 +207,219 @@ def _what_went_wrong(g: Grade) -> str:
     return why if g.shown is not False else f"{why}, evidence not shown"
 
 
+# ---- checked by a person --------------------------------------------------------------------
+
+
+def hand_sample(records: list[dict], size: int = SAMPLE, seed: int = SEED) -> list[dict]:
+    """The replies a person grades by hand: drawn at random from a finished run, by a seed fixed
+    before the run, so the sample can't be chosen after seeing results."""
+    return random.Random(seed).sample(records, size)
+
+
+def toml_string(text: str) -> str:
+    """A TOML basic string. Backslashes, quotes and every control character are escaped, which
+    json.dumps alone does not do for DEL (U+007F)."""
+    out = []
+    for ch in text:
+        if ch in '"\\':
+            out.append("\\" + ch)
+        elif ord(ch) < 0x20 or ord(ch) == 0x7F:
+            out.append(f"\\u{ord(ch):04x}")
+        else:
+            out.append(ch)
+    return '"' + "".join(out) + '"'
+
+
+def sheet(records: list[dict], questions: list[Question], verdicts: dict[str, str]) -> str:
+    """The blind grading sheet, as TOML: each sampled reply with its question and the expected
+    answer, and an empty mark. It shows nothing of what the code decided."""
+    by_id = {q.id: q for q in questions}
+    lines = [
+        f"# Blind hand grades: {SAMPLE} golden replies picked at random (seed {SEED}), graded by",
+        "# hand before the report was run, so the code's verdicts were not seen.",
+        "#",
+        "# For each reply, type R (right) or W (wrong) between the quotes after mark = and,",
+        "# for a W, a few words between the quotes after why =. Change nothing else.",
+        "",
+    ]
+    for n, r in enumerate(hand_sample(records), 1):
+        q = by_id[r["question"]]
+        if q.kind == "answerable":
+            want = " + ".join(fact.replace(" | ", " or ") for fact in q.answer)
+        else:
+            want = "decline (" + q.kind.replace("_", " ") + ")"
+        if q.id in verdicts:
+            want += f", opening with {verdicts[q.id]}"
+        lines += [
+            "[[reply]]",
+            f"n = {n}",
+            f'question = "{q.id}"',
+            f"repeat = {r['repeat']}",
+            f"asked = {toml_string(q.question)}",
+            f"expected = {toml_string(want)}",
+            f"reply = {toml_string(' '.join(r['text'].split()))}",
+            'mark = ""',
+            'why = ""',
+            "",
+        ]
+    return "\n".join(lines)
+
+
+def read_marks(path: Path) -> list[dict]:
+    """A person's marks: a hand-graded sheet, or the rechecks. Every mark must be R or W."""
+    if not Path(path).exists():
+        return []
+    rows = tomllib.loads(Path(path).read_text(encoding="utf-8")).get("reply", [])
+    for row in rows:
+        row["mark"] = row.get("mark", "").strip().upper()
+        if row["mark"] not in ("R", "W"):
+            raise ValueError(
+                f"{path}: {row.get('question')} repeat {row.get('repeat')} has no R or W"
+            )
+    return rows
+
+
+def kappa(pairs: list[tuple[bool, bool]]) -> float | None:
+    """Cohen's kappa for two graders' right-or-wrong marks: agreement beyond what chance alone
+    would give. None when both graders gave every reply the same mark, where it is undefined."""
+    n = len(pairs)
+    if n == 0:
+        return None
+    observed = sum(a == b for a, b in pairs) / n
+    first, second = sum(a for a, _ in pairs) / n, sum(b for _, b in pairs) / n
+    chance = first * second + (1 - first) * (1 - second)
+    return None if chance == 1 else (observed - chance) / (1 - chance)
+
+
+def lower_bound(hits: int, n: int, alpha: float = 0.05) -> float:
+    """The exact (Clopper-Pearson) lower end of a 95% interval for a share seen as hits of n."""
+    if hits == 0:
+        return 0.0
+
+    def at_least(p: float) -> float:
+        return sum(comb(n, i) * p**i * (1 - p) ** (n - i) for i in range(hits, n + 1))
+
+    low, high = 0.0, 1.0
+    for _ in range(60):
+        middle = (low + high) / 2
+        low, high = (middle, high) if at_least(middle) < alpha / 2 else (low, middle)
+    return low
+
+
+def disputable(g: Grade) -> bool:
+    """A wrong reply a person should read: not a leak (wrong whatever its words), and not an
+    answerable question whose evidence search never showed (a search miss). What is left is where
+    the code's reading of the words decides the mark: a fact missed, a refusal not recognised."""
+    return not g.right and not g.leaked and not (g.kind == "answerable" and g.shown is False)
+
+
+def by_a_person(
+    records: list[dict], grades: list[Grade], hand: list[dict], rechecks: list[dict], model: str
+) -> list[str]:
+    """The report's section on what a person found: the blind sample against the code, and the
+    replies the code marked wrong that a person then read."""
+    by_key = {(r["question"], r["repeat"]): (r, g) for r, g in zip(records, grades)}
+    name = short(model)
+    lines = ["## Checked by a person", ""]
+
+    drawn = [(r["question"], r["repeat"]) for r in hand_sample(records)]
+    marked = [(row["question"], row["repeat"]) for row in hand]
+    known = [(k, row) for k, row in zip(marked, hand) if k in by_key]
+    seeded = (
+        marked == drawn
+        and len(known) == len(hand)
+        and all(" ".join(by_key[k][0]["text"].split()) == row.get("reply") for k, row in known)
+    )
+    marked = [k for k, _ in known]
+    hand = [row for _, row in known]
+    if not seeded:
+        lines.append(
+            f"**The hand-graded sheet is not the seeded sample of this run (seed {SEED})**, so its"
+            f" marks prove nothing about the code. {len(hand)} of its replies are in this run."
+        )
+        if not hand:
+            return lines
+        lines.append("")
+    pairs = [(row["mark"] == "R", by_key[k][1].right) for k, row in zip(marked, hand)]
+    agree = sum(a == b for a, b in pairs)
+    k = kappa(pairs)
+    lenient = sum(not person and code for person, code in pairs)
+    code_right = sum(code for _, code in pairs)
+    opening = (
+        f"**The blind sample.** Before this report was first run, a person graded {len(hand)}"
+        f" replies drawn at random by a fixed seed ({SEED}), without seeing the code's verdicts"
+        f" ([the sheet](hand-grades-{name}.toml))."
+        if seeded
+        else f"**Hand grades from another sample.** A person graded {len(hand)} replies of this"
+        f" run ([the sheet](hand-grades-{name}.toml))."
+    )
+    lines.append(
+        opening
+        + f" They agreed with the code on **{agree} of {len(hand)}**"
+        + (f"; agreement beyond chance (Cohen's kappa) is {k:.2f}." if k is not None else ".")
+        + f" With a sample this size, the true agreement is likely at least"
+        f" {lower_bound(agree, len(hand)):.0%} (the low end of a 95% interval). Of the"
+        f" {code_right} replies the code marked right, the person marked {lenient} wrong."
+    )
+    split = [
+        (k2, row, by_key[k2][1])
+        for k2, row in zip(marked, hand)
+        if (row["mark"] == "R") != by_key[k2][1].right
+    ]
+    if split:
+        lines += ["", "| Reply | The person | The code | Why |", "| --- | --- | --- | --- |"]
+        for (qid, n), row, g in split:
+            code = "R" if g.right else "W"
+            lines.append(
+                f"| {qid}, repeat {n} | {row['mark']} | {code} | {_cell(row.get('why', ''))} |"
+            )
+
+    if rechecks:
+        due = sorted(k2 for k2, (_, g) in by_key.items() if disputable(g))
+        read = sorted((row["question"], row["repeat"]) for row in rechecks)
+        raised = [row for row in rechecks if row["mark"] == "R"]
+        total = sum(g.right for g in grades)
+        lines += [
+            "",
+            f"**Every disputable wrong.** After the report, a person read each reply the code"
+            f" marked wrong that is neither a leak nor an answer search never showed:"
+            f" {len(rechecks)} replies"
+            f" ([the rechecks](rechecks-{name}.toml)). They marked {len(raised)} of them right"
+            + (
+                ": " + ", ".join(f"{row['question']} repeat {row['repeat']}" for row in raised)
+                if raised
+                else ""
+            )
+            + f". By a person's reading, the score is **{total + len(raised)} of {len(grades)}**"
+            f" ({(total + len(raised)) / len(grades):.0%}) where the code says {total}.",
+        ]
+        if read != due:
+            lines += [
+                "",
+                "**The rechecks don't cover exactly the replies due**, so the figure above is"
+                " incomplete.",
+            ]
+        lines += ["", "| Reply | The code | The person | Why |", "| --- | --- | --- | --- |"]
+        for row in sorted(rechecks, key=lambda r: (r["question"], r["repeat"])):
+            lines.append(
+                f"| {row['question']}, repeat {row['repeat']} | W | {row['mark']}"
+                f" | {_cell(row.get('why', ''))} |"
+            )
+    return lines
+
+
 def report(
     records: list[dict],
     closed: list[dict],
     questions: list[Question],
     documents: list[Document],
     verdicts: dict[str, str],
+    hand: list[dict] | None = None,
+    rechecks: list[dict] | None = None,
 ) -> str:
-    """The librarian's score, as Markdown. Everything in it comes from the records, so the same
-    records always give the same page. `questions` is the whole golden set the run was asked."""
+    """The librarian's score, as Markdown. Everything in it comes from the records (and, when a
+    person has graded replies, from their marks), so the same files always give the same page.
+    `questions` is the whole golden set the run was asked."""
     docs = {d.id: d for d in documents}
     by_id = {q.id: q for q in questions}
     rules = rules_for(documents, questions, verdicts)
@@ -312,6 +522,12 @@ def report(
         sum(bool(g.citations_true) for g in cited),
         len(cited),
     )
+    right_answers = [g for g in answerable if g.right]
+    check(
+        "States the fact in its own words too, not only in a quoted source, of the right answers",
+        sum(bool(g.own_words) for g in right_answers),
+        len(right_answers),
+    )
     check(
         "Cites the passage holding the evidence, when search showed it",
         sum(bool(g.cited_right) for g in shown),
@@ -376,8 +592,12 @@ def report(
             " is a lucky guess or a common airline rule.",
             "",
             f"Replies stating every expected fact: {share(stated, len(cgrades))}. Questions"
-            f" answered that way every time: {', '.join(every_time) if every_time else 'none'}.",
+            f" answered that way every time: {', '.join(every_time) if every_time else 'none'}."
+            f" Cost: ${sum(r['cost'] for r in closed):.4f} for {len(closed)} calls.",
         ]
+
+    if hand:
+        lines += ["", *by_a_person(records, grades, hand, rechecks or [], model)]
 
     def right_with(reply: Callable[[Question], str]) -> int:
         return sum(grade(q, reply(q), (), [], rules).right for q in questions)

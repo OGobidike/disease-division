@@ -172,3 +172,23 @@ def test_the_report_explains_a_run_that_mixes_settings_instead_of_crashing(tmp_p
     )
     assert main(["report", "--kb", str(ROOT / "kb"), "--runs", str(runs)]) == 1
     assert "Can't report: the golden run mixes replies" in capsys.readouterr().out
+
+
+def test_the_sheet_waits_for_a_finished_run_and_never_overwrites(tmp_path, capsys):
+    import json
+
+    runs, out = tmp_path / "runs", tmp_path / "results"
+    runs.mkdir()
+    line = {"question": "q01", "repeat": 1, "repeats": 1, "text": "x", "citations": []}
+    (runs / "golden-haiku-5-5.jsonl").write_text(json.dumps(line) + "\n", encoding="utf-8")
+    args = ["sheet", "--runs", str(runs), "--out", str(out)]
+    assert main(args) == 1
+    assert "The golden run has 1 of 60 replies, so no sheet was written" in capsys.readouterr().out
+    lines = [dict(line, question=f"q{i:02d}") for i in range(1, 61)]
+    (runs / "golden-haiku-5-5.jsonl").write_text(
+        "".join(json.dumps(x) + "\n" for x in lines), encoding="utf-8"
+    )
+    assert main(args) == 0
+    assert (out / "hand-grades-haiku-5-5.toml").exists()
+    assert main(args) == 1
+    assert "already there, so it was left as it is" in capsys.readouterr().out
