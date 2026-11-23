@@ -66,6 +66,11 @@ def test_facts_are_matched_as_whole_words(text, phrase, found):
         ("open until 10 p.m.", "10 pm"),
         ("about 40 mins", "40 minutes"),
         ("counters 21\u201324", "21-24"),
+        ("counters 21 \u2013 24", "21-24"),
+        ("at the end of Q2, 2027", "Q2 2027"),
+        ("a 3-hour window", "3 hours"),
+        ("within 24 hours", "24 hours"),
+        ("a 6 month validity", "6 months"),
     ],
 )
 def test_amounts_units_and_times_are_read_as_people_write_them(written, fact):
@@ -79,6 +84,9 @@ def test_amounts_units_and_times_are_read_as_people_write_them(written, fact):
         ("It costs 9,500.", "9,000"),
         ("a 120% load", "20%"),
         ("17 kg", "7 kg"),
+        ("a 13-hour window", "3 hours"),
+        ("counters 21 \u2013 24", "1-24"),
+        ("Q2, 2028", "Q2 2027"),
     ],
 )
 def test_normalising_never_makes_a_different_amount_match(written, fact):

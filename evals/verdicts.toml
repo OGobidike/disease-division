@@ -1,0 +1,18 @@
+# Yes-or-no verdicts for the seven golden questions that a reply should open with a yes or a no.
+#
+# The audit (docs/AUDIT.md) found that matching facts can't tell "yes, NGN 8,000" from
+# "no, NGN 8,000", so these seven also need the right first word. The golden set itself is
+# frozen, so the verdicts live beside it. Written on 2026-11-23, before any model answered a
+# golden question, and frozen by tests/test_freeze.py from then on.
+#
+# The librarian is told to begin with Yes or No when a question can be answered that way.
+# A reply passes when its first word is the verdict below.
+
+[verdicts]
+q05 = "yes"  # a misspelt name: up to 3 letters are corrected free of charge
+q14 = "yes"  # a bicycle: carried for a flat NGN 10,000 per flight
+q25 = "yes"  # a Granite member pays NGN 8,000 per visit (free only on a Peak fare)
+q28 = "yes"  # a dust haze advisory: move free of charge within 10 days
+q31 = "yes"  # credit instead of a refund: a 10% bonus
+q36 = "no"   # 11 at night: the contact centre closes at 22:00
+q38 = "yes"  # a hotel discount: 15% at Nightjar Suites

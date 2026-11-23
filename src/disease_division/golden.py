@@ -67,8 +67,11 @@ def alternatives(fact: str) -> list[str]:
 
 
 _REWRITES = [
-    # Dashes of every width read as a hyphen: "21–24" is "21-24".
+    # Dashes of every width read as a hyphen, and a range closes up: "21 – 24" is "21-24".
     (re.compile("[\u2012\u2013\u2014\u2015\u2212]"), "-"),
+    (re.compile(r"(\d)\s*-\s*(?=\d)"), r"\1-"),
+    # A comma before a year goes: "Q2, 2027" is "Q2 2027".
+    (re.compile(r"(?<=\w),\s*(?=(?:19|20)\d\d\b)"), " "),
     # Naira prefixes go: "NGN 9,000", "NGN9,000", the naira sign and "N9,000" all become "9,000".
     (re.compile(r"(?<!\w)(?:ngn|\u20a6)\s*(?=\d)", re.IGNORECASE), ""),
     (re.compile(r"(?<!\w)N(?=\d)"), ""),
@@ -80,6 +83,9 @@ _REWRITES = [
     (re.compile(r"(\d)\s*(?:kg|kgs|kilos?|kilograms?)\b", re.IGNORECASE), r"\1 kg"),
     (re.compile(r"(\d)\s*(?:wh|watt[- ]?hours?)\b", re.IGNORECASE), r"\1 wh"),
     (re.compile(r"(\d)\s*mins?\b", re.IGNORECASE), r"\1 minutes"),
+    # Spans of time are read in the singular, hyphenated or not: "3 hours", "3-hour" and
+    # "3 hour" are the same, and so are "24 months" and "24 month".
+    (re.compile(r"(\d)[\s-]*(hour|minute|day|week|month|year)s?\b", re.IGNORECASE), r"\1 \2"),
     # Clock times: "10pm" and "10 p.m." become "10 pm".
     (re.compile(r"(\d)\s*([ap])\.?m\.?(?!\w)", re.IGNORECASE), r"\1 \2m"),
     (re.compile(r"\s+"), " "),

@@ -10,6 +10,8 @@ dependencies = [
     # The store: Postgres through psycopg 3, with pgvector's types registered on each connection
     "psycopg[binary]>=3.2",
     "pgvector>=0.4",
+    # The librarian: Claude, through Anthropic's own SDK. Only the paid commands use it
+    "anthropic>=2.12",
 ]
 
 [project.scripts]

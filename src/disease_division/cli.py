@@ -3,20 +3,31 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from collections import Counter
 from pathlib import Path
 
 from disease_division.golden import KINDS, check, load_questions
 from disease_division.kb import CONTROL_NUMBER, all_passages, load_documents, split_passages
+from disease_division.librarian import DEFAULT_MODEL, MODELS, PASSAGES
 from disease_division.search import METHODS
 
+QUESTIONS = Path("evals/questions.toml")
+PILOT = Path("evals/pilot.toml")
+VERDICTS = Path("evals/verdicts.toml")
+RUNS = Path("results/runs")
 
-def shelf(kb: Path, questions_path: Path) -> int:
+
+def shelf(kb: Path, questions_path: Path, pilot_path: Path = PILOT, verdicts_path=VERDICTS) -> int:
     """Report what is on the shelves and check every rule. Returns the exit code."""
+    from disease_division.grade import load_verdicts
+
     try:
         documents = load_documents(kb)
         questions = load_questions(questions_path)
+        practice = load_questions(pilot_path)
+        verdicts = load_verdicts(verdicts_path)
     except (OSError, ValueError, KeyError) as error:
         print(f"Could not read the stacks: {error}")
         return 1
@@ -36,7 +47,30 @@ def shelf(kb: Path, questions_path: Path) -> int:
         + ")"
     )
 
+    print(
+        f"The practice set (for the pilot): {len(practice)} questions;"
+        f" yes-or-no verdicts: {len(verdicts)}"
+    )
+
     problems = check(questions, documents)
+    problems += [f"practice set: {p}" for p in check(practice, documents)]
+    answerable = {q.id for q in questions if q.kind == "answerable"}
+    problems += [
+        f"{qid}: a verdict needs an answerable golden question"
+        for qid in verdicts
+        if qid not in answerable
+    ]
+    passages = all_passages(documents)
+
+    def homes(qs):
+        return {p.id for q in qs if q.evidence for p in passages if q.evidence in p.text}
+
+    golden_homes = homes(questions)
+    problems += [
+        f"practice set: {q.id} is answered in a passage that answers a golden question"
+        for q in practice
+        if homes([q]) & golden_homes
+    ]
     owners: dict[str, str] = {}
     for document in documents:
         numbers = set(CONTROL_NUMBER.findall(document.body))
@@ -162,12 +196,212 @@ def score(kb: Path, questions_path: Path, out: Path) -> int:
     return 0
 
 
+# ---- the librarian: the commands that call Claude ---------------------------------------------
+
+
+def load_env(path: Path = Path(".env")) -> None:
+    """Read NAME=value lines from .env into the environment. A name already set wins."""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        name, value = line.split("=", 1)
+        name = name.strip().removeprefix("export ").strip()
+        value = value.strip().strip("\"'")
+        if name and name not in os.environ:
+            os.environ[name] = value
+
+
+def has_key() -> bool:
+    """True when a key is set. Paid commands check this before they do anything else."""
+    load_env()
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        return True
+    print(
+        "No ANTHROPIC_API_KEY. Copy .env.example to .env and put your key there; .env is never"
+        " committed. Set a spend limit in the Claude Console before the first paid run."
+    )
+    return False
+
+
+def call_failed(error) -> int:
+    """Explain an API error in one line, and say what to do next."""
+    import anthropic
+
+    again = "Run the same command again: it picks up where it stopped."
+    if isinstance(error, anthropic.AuthenticationError):
+        message = "The API refused the key in .env (401). Check it in the Claude Console."
+    elif isinstance(error, anthropic.PermissionDeniedError):
+        message = f"The key may not use this model (403): {error.message}"
+    elif isinstance(error, anthropic.RateLimitError):
+        message = f"Still rate limited after the retries (429). Wait a minute. {again}"
+    elif isinstance(error, anthropic.BadRequestError):
+        message = f"The API turned the request down (400): {error.message}"
+    elif isinstance(error, anthropic.APIStatusError):
+        message = f"The API answered {error.status_code}: {error.message}. {again}"
+    else:
+        message = f"Couldn't reach the API ({error.__class__.__name__}). {again}"
+    print(message)
+    return 1
+
+
+def retriever(conn, embedder, documents):
+    """Search the store the librarian's way: the first PASSAGES results of its method."""
+    from disease_division.librarian import METHOD
+    from disease_division.search import search
+
+    passages = {p.id: p for p in all_passages(documents)}
+
+    def retrieve(question: str):
+        return [passages[i] for i in search(conn, embedder, question, METHOD)[:PASSAGES]]
+
+    return retrieve
+
+
+def ask(question: str, model_name: str, kb: Path, closed_book: bool) -> int:
+    """Ask the librarian one question and show its reply, citations and cost."""
+    import anthropic
+
+    from disease_division.embed import FastEmbedder
+    from disease_division.librarian import Claude
+
+    if not has_key():
+        return 1
+    documents = load_documents(kb)
+    passages = []
+    if not closed_book:
+        conn = _open_store()
+        if conn is None:
+            return 1
+        embedder = FastEmbedder()
+        with conn:
+            if not _store_matches(conn, documents, embedder.model):
+                return 1
+            passages = retriever(conn, embedder, documents)(question)
+    try:
+        reply = Claude(model_name).answer(question, passages, closed_book=closed_book)
+    except anthropic.APIError as error:
+        return call_failed(error)
+    print(reply.text or "(no text)")
+    for c in reply.citations:
+        print(f"  cited [{c.passage}] {c.text}")
+    read = "no pages" if closed_book else "read " + ", ".join(p.id for p in passages)
+    print(
+        f"\n{reply.model} {read}. {reply.input_tokens:,} tokens in, {reply.output_tokens:,} out:"
+        f" ${reply.cost:.5f}. Stop reason: {reply.stop_reason}."
+    )
+    return 0
+
+
+def run_questions(questions, model_name, kb, path, repeats, budget, closed_book) -> int:
+    """Run a question set through the librarian into `path`, within the budget."""
+    import anthropic
+
+    from disease_division.embed import FastEmbedder
+    from disease_division.librarian import Claude
+    from disease_division.run import run
+
+    documents = load_documents(kb)
+    model = Claude(model_name)
+    print(
+        f"{len(questions)} questions x {repeats} to {model_name}"
+        f"{', closed book' if closed_book else ''}, budget ${budget:g}, into {path}."
+    )
+    try:
+        if closed_book:
+            calls, spent, finished = run(
+                questions, model, lambda q: [], path, repeats, budget, closed_book=True
+            )
+        else:
+            conn = _open_store()
+            if conn is None:
+                return 1
+            embedder = FastEmbedder()
+            with conn:
+                if not _store_matches(conn, documents, embedder.model):
+                    return 1
+                retrieve = retriever(conn, embedder, documents)
+                calls, spent, finished = run(questions, model, retrieve, path, repeats, budget)
+    except anthropic.APIError as error:
+        return call_failed(error)
+    except ValueError as error:
+        print(error)
+        return 1
+    print(f"{calls} calls made now; ${spent:.4f} spent in this run so far.")
+    return 0 if finished else 1
+
+
+def pilot(model_name: str, kb: Path, folder: Path, budget: float) -> int:
+    """The 20 practice questions, once each: the real size of a call, before the golden run."""
+    from disease_division.librarian import fingerprint
+    from disease_division.run import pilot_summary, read_records, run_path
+
+    if not has_key():
+        return 1
+    questions = load_questions(PILOT)
+    path = run_path(folder, "pilot", model_name)
+    code = run_questions(questions, model_name, kb, path, 1, budget, closed_book=False)
+    records = [r for r in read_records(path) if r.get("settings") == fingerprint(model_name)]
+    if records:
+        print()
+        print(pilot_summary(records, questions))
+    return code
+
+
+def answer(model_name, kb, questions_path, folder, repeats, budget, closed_book) -> int:
+    """The golden run: every golden question, `repeats` times. Closed book asks only the
+    answerable ones, with no pages."""
+    from disease_division.run import run_path
+
+    if not has_key():
+        return 1
+    questions = load_questions(questions_path)
+    if closed_book:
+        questions = [q for q in questions if q.kind == "answerable"]
+    path = run_path(folder, "closed-book" if closed_book else "golden", model_name)
+    code = run_questions(questions, model_name, kb, path, repeats, budget, closed_book)
+    if code == 0:
+        print("Every reply is in. Next: uv run division report")
+    return code
+
+
+def report(model_name, kb, questions_path, verdicts_path, folder, out) -> int:
+    """Grade a model's golden run (and its closed-book run, if there is one) and write it up."""
+    from disease_division import run as running
+    from disease_division.grade import load_verdicts
+
+    records = running.read_records(running.run_path(folder, "golden", model_name))
+    if not records:
+        print(f"No golden run for {model_name} yet. Run: uv run division answer")
+        return 1
+    closed = running.read_records(running.run_path(folder, "closed-book", model_name))
+    documents = load_documents(kb)
+    questions = load_questions(questions_path)
+    verdicts = load_verdicts(verdicts_path)
+    try:
+        text = running.report(records, closed, questions, documents, verdicts)
+    except ValueError as error:
+        print(f"Can't report: {error}.")
+        return 1
+    out.mkdir(parents=True, exist_ok=True)
+    name = f"answers-{running.short(model_name)}"
+    (out / f"{name}.md").write_text(text, encoding="utf-8")
+    running.write_csv(out / f"{name}.csv", records, questions, documents, verdicts)
+    print(text)
+    print(f"Written to {out / (name + '.md')} and {out / (name + '.csv')}.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="division", description="The Disease Division")
     commands = parser.add_subparsers(dest="command", required=True)
     shelf_parser = commands.add_parser("shelf", help="report on the stacks and check every rule")
     shelf_parser.add_argument("--kb", type=Path, default=Path("kb"))
-    shelf_parser.add_argument("--questions", type=Path, default=Path("evals/questions.toml"))
+    shelf_parser.add_argument("--questions", type=Path, default=QUESTIONS)
+    shelf_parser.add_argument("--pilot", type=Path, default=PILOT)
+    shelf_parser.add_argument("--verdicts", type=Path, default=VERDICTS)
     load_parser = commands.add_parser("load", help="embed every passage and store it")
     load_parser.add_argument("--kb", type=Path, default=Path("kb"))
     search_parser = commands.add_parser("search", help="show what a search finds for a question")
@@ -179,14 +413,57 @@ def main(argv: list[str] | None = None) -> int:
     score_parser.add_argument("--kb", type=Path, default=Path("kb"))
     score_parser.add_argument("--questions", type=Path, default=Path("evals/questions.toml"))
     score_parser.add_argument("--out", type=Path, default=Path("results"))
+
+    def model_option(p):
+        p.add_argument("--model", choices=MODELS, default=DEFAULT_MODEL)
+        p.add_argument("--kb", type=Path, default=Path("kb"))
+
+    ask_parser = commands.add_parser("ask", help="ask the librarian one question (paid)")
+    ask_parser.add_argument("question")
+    ask_parser.add_argument("--closed-book", action="store_true", help="give it no pages")
+    model_option(ask_parser)
+    pilot_parser = commands.add_parser("pilot", help="the 20 practice questions, once (paid)")
+    pilot_parser.add_argument("--budget", type=float, default=0.05, help="US dollars")
+    pilot_parser.add_argument("--runs", type=Path, default=RUNS)
+    model_option(pilot_parser)
+    answer_parser = commands.add_parser("answer", help="answer the golden set (paid)")
+    answer_parser.add_argument("--repeats", type=int, default=3)
+    answer_parser.add_argument("--budget", type=float, default=0.50, help="US dollars")
+    answer_parser.add_argument("--closed-book", action="store_true", help="no pages at all")
+    answer_parser.add_argument("--questions", type=Path, default=QUESTIONS)
+    answer_parser.add_argument("--runs", type=Path, default=RUNS)
+    model_option(answer_parser)
+    report_parser = commands.add_parser("report", help="grade a golden run and write it up")
+    report_parser.add_argument("--questions", type=Path, default=QUESTIONS)
+    report_parser.add_argument("--verdicts", type=Path, default=VERDICTS)
+    report_parser.add_argument("--runs", type=Path, default=RUNS)
+    report_parser.add_argument("--out", type=Path, default=Path("results"))
+    model_option(report_parser)
+
     args = parser.parse_args(argv)
     if args.command == "shelf":
-        return shelf(args.kb, args.questions)
+        return shelf(args.kb, args.questions, args.pilot, args.verdicts)
     if args.command == "load":
         return load(args.kb)
     if args.command == "search":
         return find(args.question, args.method, args.kb, args.top)
-    return score(args.kb, args.questions, args.out)
+    if args.command == "score":
+        return score(args.kb, args.questions, args.out)
+    if args.command == "ask":
+        return ask(args.question, args.model, args.kb, args.closed_book)
+    if args.command == "pilot":
+        return pilot(args.model, args.kb, args.runs, args.budget)
+    if args.command == "answer":
+        return answer(
+            args.model,
+            args.kb,
+            args.questions,
+            args.runs,
+            args.repeats,
+            args.budget,
+            args.closed_book,
+        )
+    return report(args.model, args.kb, args.questions, args.verdicts, args.runs, args.out)
 
 
 if __name__ == "__main__":

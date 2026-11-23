@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from disease_division.cli import main
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -85,3 +87,88 @@ def test_score_refuses_a_store_that_does_not_match_the_pages(
     assert _store_matches(db, documents, fake_embedder.model)
     assert not _store_matches(db, documents, "another-model")
     assert "Run: uv run division load" in capsys.readouterr().out
+
+
+SHELF = ["shelf", "--kb", str(ROOT / "kb"), "--questions", str(ROOT / "evals/questions.toml")]
+SHELF += ["--pilot", str(ROOT / "evals/pilot.toml")]
+
+
+def test_shelf_also_checks_the_practice_set_and_the_verdicts(capsys):
+    assert main([*SHELF, "--verdicts", str(ROOT / "evals/verdicts.toml")]) == 0
+    assert "The practice set (for the pilot): 20 questions; yes-or-no verdicts: 7" in (
+        capsys.readouterr().out
+    )
+
+
+def test_shelf_catches_a_verdict_on_a_question_that_cannot_have_one(tmp_path, capsys):
+    verdicts = tmp_path / "verdicts.toml"
+    verdicts.write_text('[verdicts]\nq49 = "no"\n', encoding="utf-8")
+    assert main([*SHELF, "--verdicts", str(verdicts)]) == 1
+    assert "q49: a verdict needs an answerable golden question" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("command", [["ask", "Is there Wi-Fi?"], ["pilot"], ["answer"]])
+def test_every_paid_command_stops_first_when_there_is_no_key(
+    command, tmp_path, monkeypatch, capsys
+):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("DIVISION_DB_URL", "postgresql://division:division@127.0.0.1:1/division")
+    assert main([*command, "--kb", str(ROOT / "kb")]) == 1
+    out = capsys.readouterr().out
+    assert out.startswith("No ANTHROPIC_API_KEY.")
+    assert "Could not reach the store" not in out
+
+
+def test_the_key_is_read_from_dot_env_without_overriding_what_is_set(tmp_path, monkeypatch):
+    from disease_division.cli import load_env
+
+    env = tmp_path / ".env"
+    env.write_text(
+        "# a comment\nANTHROPIC_API_KEY='sk-test'\nexport DIVISION_X=1\nDIVISION_Y=from-file\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("DIVISION_X", raising=False)
+    monkeypatch.setenv("DIVISION_Y", "already-set")
+    load_env(env)
+    import os
+
+    assert os.environ["ANTHROPIC_API_KEY"] == "sk-test"
+    assert os.environ["DIVISION_X"] == "1"
+    assert os.environ["DIVISION_Y"] == "already-set"
+
+
+def test_the_report_says_plainly_when_there_is_no_run_yet(tmp_path, capsys):
+    assert main(["report", "--kb", str(ROOT / "kb"), "--runs", str(tmp_path)]) == 1
+    assert "No golden run for claude-haiku-5-5 yet" in capsys.readouterr().out
+
+
+def test_an_api_error_is_explained_in_one_line(capsys):
+    import anthropic
+    import httpx2
+
+    from disease_division.cli import call_failed
+
+    request = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+    response = httpx2.Response(429, request=request)
+    assert call_failed(anthropic.RateLimitError("slow down", response=response, body=None)) == 1
+    assert "Run the same command again: it picks up where it stopped." in capsys.readouterr().out
+
+
+def test_the_report_explains_a_run_that_mixes_settings_instead_of_crashing(tmp_path, capsys):
+    import json
+
+    line = {"question": "q01", "repeat": 1, "repeats": 1, "model": "claude-haiku-5-5"}
+    line |= {"settings": "a", "effort": "medium", "method": "hybrid", "passages": []}
+    line |= {"text": "", "citations": [], "stop_reason": "end_turn", "input_tokens": 1}
+    line |= {"output_tokens": 1, "cache_write_tokens": 0, "cache_read_tokens": 0, "cost": 0.0}
+    line |= {"request_id": "", "at": "2026-11-23T00:00:00+00:00"}
+    other = dict(line, question="q02", settings="b")
+    runs = tmp_path / "runs"
+    runs.mkdir()
+    (runs / "golden-haiku-5-5.jsonl").write_text(
+        json.dumps(line) + "\n" + json.dumps(other) + "\n", encoding="utf-8"
+    )
+    assert main(["report", "--kb", str(ROOT / "kb"), "--runs", str(runs)]) == 1
+    assert "Can't report: the golden run mixes replies" in capsys.readouterr().out
