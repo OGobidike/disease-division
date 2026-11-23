@@ -1,7 +1,9 @@
 """The freeze: the golden set and the pages it is scored on, fixed before any search ran.
 
-Card D2 set these checksums on 2026-11-20, before the first search over the golden set. From then
-on the questions are never edited after seeing results, and neither are the pages they quote.
+Card D2 set the first two checksums on 2026-11-20, before the first search over the golden set.
+From then on the questions are never edited after seeing results, and neither are the pages they
+quote. Card D3 added the yes-or-no verdicts on 2026-11-23, before any model answered a golden
+question, and froze them the same way.
 If one of these tests fails, something changed that the scores depend on: put it back, or start
 a new, separately named golden set rather than editing this one.
 """
@@ -13,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 QUESTIONS_MD5 = "9e9bcb26c8be9a8e68d164191bbaedb4"
 PAGES_MD5 = "0722f2f695f76d6e0b5384d3a96f75e0"
+VERDICTS_MD5 = "690f18bfc6a593be0569a501bb4d4adf"
 
 
 def folder_md5(folder: Path) -> str:
@@ -26,6 +29,10 @@ def test_the_golden_questions_are_frozen():
     assert (
         hashlib.md5((ROOT / "evals" / "questions.toml").read_bytes()).hexdigest() == QUESTIONS_MD5
     )
+
+
+def test_the_yes_or_no_verdicts_are_frozen():
+    assert hashlib.md5((ROOT / "evals" / "verdicts.toml").read_bytes()).hexdigest() == VERDICTS_MD5
 
 
 def test_the_pages_they_are_scored_on_are_frozen():

@@ -1,0 +1,160 @@
+# Practice questions for the pilot. These are not part of the golden set.
+#
+# The pilot sends these 20 questions to the model before the golden run, to measure how many
+# tokens a real call takes and to see real replies (refusals included). If the pilot shows
+# something broken, it can be fixed here without anyone having seen a golden question answered.
+# None of them shares a question, a fact or an answering passage with a golden question;
+# tests/test_pilot.py checks that. (Search may still show a practice question a passage that
+# answers a golden one, as it can for any question.)
+#
+# The format is the golden set's, and the same checks apply (division shelf runs them).
+
+[[question]]
+id = "p01"
+kind = "answerable"
+question = "Do I get anything free to drink on a long flight?"
+doc = "food-and-drink"
+evidence = "On flights longer than 90 minutes, every passenger gets a free soft drink and a snack."
+answer = ["soft drink"]
+
+[[question]]
+id = "p02"
+kind = "answerable"
+question = "How heavy can my cabin bag be?"
+doc = "cabin-baggage"
+evidence = "The cabin bag must weigh no more than 7 kg and measure no more than 55 x 40 x 20 cm, including wheels and handles."
+answer = ["7 kg"]
+
+[[question]]
+id = "p03"
+kind = "answerable"
+question = "How many planes does Zuma Air fly?"
+doc = "fleet"
+evidence = "Zuma Air flies 12 aircraft"
+answer = ["12 | twelve"]
+
+[[question]]
+id = "p04"
+kind = "answerable"
+question = "How much is the jollof rice on board?"
+doc = "food-and-drink"
+evidence = "A plate of jollof rice with chicken costs NGN 3,500."
+answer = ["3,500"]
+
+[[question]]
+id = "p05"
+kind = "answerable"
+question = "How many passengers does the E195-E2 carry?"
+doc = "fleet"
+evidence = "The E195-E2 seats 132 passengers and the ATR 72-600 seats 70."
+answer = ["132"]
+
+[[question]]
+id = "p06"
+kind = "answerable"
+question = "How long until I get a full answer to a complaint?"
+doc = "complaints"
+evidence = "We acknowledge every complaint within 2 working days and send a full answer within 14 days."
+answer = ["14 days | fourteen days"]
+
+[[question]]
+id = "p07"
+kind = "answerable"
+question = "How many people can share points in a family pool?"
+doc = "family-pool"
+evidence = "A Summit Club Family Pool lets up to 6 members of one household put their points together for reward flights."
+answer = ["6 | six"]
+
+[[question]]
+id = "p08"
+kind = "answerable"
+question = "I'm on a Peak fare and missed my flight. What is the no-show fee?"
+doc = "no-shows"
+evidence = "Peak passengers who miss their flight get their fare back minus a no-show fee of NGN 7,500."
+answer = ["7,500"]
+
+[[question]]
+id = "p09"
+kind = "answerable"
+question = "How long do I need for a connection in Abuja?"
+doc = "missed-connections"
+evidence = "At Abuja, a connection between two Zuma Air flights needs at least 60 minutes."
+answer = ["60 minutes | 1 hour | one hour | an hour"]
+
+[[question]]
+id = "p10"
+kind = "answerable"
+question = "How long is Zuma Credit valid?"
+doc = "zuma-credit"
+evidence = "Zuma Credit is valid for 12 months from the day it is issued and can pay for anyone's booking."
+answer = ["12 months | one year | 1 year | a year"]
+
+[[question]]
+id = "p11"
+kind = "answerable"
+question = "Can I charge my phone on the ATR 72-600?"
+doc = "fleet"
+evidence = "The ATR 72-600 has no charging ports, so charge your phone before you board."
+answer = ["charging ports | charging port"]
+
+[[question]]
+id = "p12"
+kind = "answerable"
+question = "How old must I be to sit in an exit row?"
+doc = "seat-selection"
+evidence = "Passengers in exit rows must be at least 15 years old and willing to help the crew in an emergency."
+answer = ["15"]
+
+[[question]]
+id = "p13"
+kind = "answerable"
+question = "How long do you keep my booking records?"
+doc = "privacy"
+evidence = "Booking records are kept for 6 years after the travel date and then deleted."
+answer = ["6 years | six years"]
+
+[[question]]
+id = "p14"
+kind = "staff_only"
+question = "If someone in my family dies, will you waive the fare difference when I change my flight?"
+doc = "staff-fee-waivers"
+evidence = "For a death in the immediate family, agents may waive both the change fee and any difference in fare, once per booking, with the duty manager's approval."
+answer = ["difference in fare"]
+
+[[question]]
+id = "p15"
+kind = "staff_only"
+question = "Do you ever overbook flights to Accra?"
+doc = "staff-overbooking"
+evidence = "Flights to Accra are never overbooked, because passengers refused boarding there cannot easily be moved the same day."
+answer = ["never overbooked"]
+
+[[question]]
+id = "p16"
+kind = "no_answer"
+question = "Is there a dress code for flying with you?"
+absent = ["dress code", "clothing"]
+
+[[question]]
+id = "p17"
+kind = "no_answer"
+question = "Do you fly to London?"
+absent = ["london"]
+
+[[question]]
+id = "p18"
+kind = "no_answer"
+question = "Do you serve halal meals?"
+absent = ["halal"]
+
+[[question]]
+id = "p19"
+kind = "no_answer"
+question = "Is there in-flight entertainment, like films?"
+absent = ["entertainment", "film", "movie"]
+
+[[question]]
+id = "p20"
+kind = "no_answer"
+question = "Can I buy duty-free goods on board?"
+absent = ["duty free", "duty-free"]

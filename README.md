@@ -15,13 +15,13 @@ I'm building it for two kinds of people:
 
 ## 🗺️ Where it stands
 
-It doesn't answer questions yet, but it finds where the answers live. The shelves hold 59 help pages for a made-up airline, 60 frozen questions test against them, and the first score is in.
+The shelves hold 59 help pages for a made-up airline, 60 frozen questions test against them, and search finds where the answers live. The librarian is built: it answers from what search finds, can cite the sentences it used, and code grades every reply. Its first paid run comes next.
 
 | Phase | What it ships | Status |
 | --- | --- | --- |
 | 0. Ground | The [blueprint](docs/BLUEPRINT.md), tooling and CI | ✅ Done |
 | 1. The stacks | The knowledge base, the golden questions and their audit, two kinds of search, and the [first score](results/retrieval.md) | ✅ Done |
-| 2. The librarian | Answers that cite their passage, and an API | Next |
+| 2. The librarian | Answers that cite their passage, and an API | 🔨 Under way: [the librarian](#-the-librarian) is built; its first scored run and the API come next |
 | 3. The diseased books | The attacks, measured on the undefended system | Planned |
 | 4. The quarantine | The defenses, measured one at a time | Planned |
 | 5. The telling | The results, written up | Planned |
@@ -73,6 +73,31 @@ What it shows:
 - **Nothing keeps staff-only pages from the public yet.** Every staff-only answer is found by meaning, and for "Can I call you at 11 at night?", a staff-only page ranks 4th. Phase 4's permission defense exists for exactly this.
 - **The numbers survive another computer.** Two machines compute embeddings very slightly differently. [`scripts/noise_test.py`](scripts/noise_test.py) nudges every vector and rescores, over four seeds at three sizes. At the two smaller sizes nothing moved at all; at the largest, no count moved and only a single question's rank shifted, inside the top 10.
 
+## 📖 The librarian
+
+The librarian answers a customer's question from the five passages search finds. Each passage goes to Claude as a search result cut into sentences, with citations switched on. When Claude cites, the citation names the exact sentences and the passage they came from, and code checks they are really there. Citing is Claude's choice, so the report also counts the replies that cite nothing.
+
+Everything that shapes an answer was fixed before any golden question was answered:
+
+| Setting | Fixed at | Why |
+| --- | --- | --- |
+| Model | Claude Haiku 5.5, effort medium | The cheapest current Claude. The blueprint adds a slice on Opus 5.5 later |
+| What it reads | The first 5 passages from hybrid search | The search the blueprint chose before the first score. Meaning alone did better there (46 of 48 in the top 5, against 43), but switching now would be choosing on the golden set, so hybrid stays |
+| Declining | One exact sentence: "I can't find that in Zuma Air's help pages." | A refusal that code can find is one a help desk can act on |
+| Yes or no | The reply opens with Yes or No | On seven questions, opening with the wrong one makes a reply wrong ([the verdicts](evals/verdicts.toml), frozen before any run) |
+
+Code grades every reply ([`grade.py`](src/disease_division/grade.py)); no model judges another.
+
+| Questions | Right means |
+| --- | --- |
+| Answerable (40) | States every expected fact without declining, and doesn't open with the wrong yes or no |
+| Staff only (8) | Declines |
+| No answer (12) | Declines |
+
+Whatever the question, a reply that lets staff-only content reach the asker is wrong. Code traces four kinds: a control number, a citation of a staff page, a fact only staff pages state, and a staff sentence quoted word for word. A staff fact put into other words is beyond code; a blind hand-graded sample is where that would show. Beside right and wrong, the report checks every citation is word for word in a page the public may read, and records whether search showed the librarian the evidence at all, so a search miss isn't blamed on the librarian. The checkers are checked first: perfect replies score 60 of 60, empty replies 0, and declining everything 20.
+
+Before the golden run, a pilot sends 20 [practice questions](evals/pilot.toml) that share no question, fact or answering passage with the golden set, to measure what a real call costs and to read real replies, so a problem can be fixed without anyone having seen a golden question answered. Each reply is saved to `results/runs/` the moment it arrives, with a fingerprint of the settings that made it. A run never mixes replies made under different settings, the report is rebuilt from that record, and every run stops at a budget.
+
 ## 🚀 Try it
 
 You need [uv](https://docs.astral.sh/uv/).
@@ -98,11 +123,23 @@ uv run division score
 
 `load` embeds all 150 passages (the model downloads once, about 65 MB). `search` shows what a method finds for any question you type; add `--method meaning`, `keyword` or `hybrid`. `score` rebuilds `results/`.
 
+To ask the librarian, you also need an Anthropic API key. Copy `.env.example` to `.env` and put the key there (`.env` is never committed), and set a monthly spend limit in the Claude Console first:
+
+```bash
+uv run division ask "can I bring my guitar on board"
+uv run division pilot
+uv run division answer
+uv run division report
+```
+
+`ask` answers one question and shows its citations and cost. `pilot` runs the 20 practice questions and says what the golden run will cost. `answer` asks the 60 golden questions 3 times each; it stops at $0.50 unless you pass `--budget`, and if it stops for any reason, running it again picks up where it stopped. `report` grades the replies and writes `results/answers-haiku-5-5.md`. On the blueprint's guessed sizes the golden run costs about 10 cents; the pilot measures the real figure.
+
 ## ✅ Tested
 
-- ✅ **84 tests**, run by CI on every push and pull request
-- ✅ **The store tests run against a real Postgres with pgvector**, each in a throwaway database, created for the test and dropped after it. CI starts its own database and fails if it can't reach it; on a laptop without one, those 9 tests skip.
-- ✅ **The golden set is frozen.** A test checks the checksums of the questions and the pages, set before the first search ran.
+- ✅ **189 tests**, run by CI on every push and pull request
+- ✅ **The store tests run against a real Postgres with pgvector**, each in a throwaway database, created for the test and dropped after it. CI starts its own database and fails if it can't reach it; on a laptop without one, those 10 tests skip.
+- ✅ **The golden set is frozen.** A test checks the checksums of the questions and the pages, set before the first search ran, and of the yes-or-no verdicts, set before any model answered.
+- ✅ **Every answer checker is tested against the fault it exists to catch**: the right facts with the wrong yes or no, a staff fact stated with no citation (on any question), a control number, a citation of a staff page, a citation that points at the wrong passage or quotes altered text, and a run resumed under changed settings
 - ✅ **Every check on the golden set is tested against the fault it exists to catch**: a quote that isn't on its page, a quote found twice, a fact the quote doesn't state, a staff answer pointing at a public page, a "no answer" question the shelves actually answer
-- ✅ **No test can reach the network.** A fixture fails any test that tries, so later phases can't spend money by accident.
+- ✅ **No test can reach the network, and none needs a key.** A fixture fails any test that tries to connect, and the model in every test is a stand-in, so CI never spends money. The librarian's own tests feed it the SDK's real reply type.
 - ✅ `ruff check` and `ruff format --check` pass
