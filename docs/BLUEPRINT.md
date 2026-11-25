@@ -149,7 +149,7 @@ Each defense is measured alone and then all together, on both attack success and
 | --- | --- | --- |
 | 0. Ground | Repo, this blueprint, tooling, CI | No |
 | 1. The stacks ✅ | Cards D1 and D1b: the pages, the golden set, its audit and checks. Card D2: the freeze, the two searches and the first score (right passage found) | No |
-| 2. The librarian 🔨 | Card D3: the librarian, its checkers and the runner. Card D3b: the first score (151 of 180 replies right), checked by hand. Next: the API | Yes |
+| 2. The librarian ✅ | Card D3: the librarian, its checkers and the runner. Card D3b: the first score (151 of 180 replies right), checked by hand. Card D4: the API, in Docker | Yes |
 | 3. The diseased books | Attack documents, the checkers, the undefended numbers | Yes |
 | 4. The quarantine | Defenses, measured one at a time | Yes |
 | 5. The telling | README, results page, project page | No |

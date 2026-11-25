@@ -1,6 +1,7 @@
-# The Disease Division's one service: Postgres 16 with pgvector, which holds the passages, their
-# vectors and their keyword index. It is the same image Morning Manna uses, and it listens on
-# 5433 so the two databases can run side by side (Morning Manna's uses 5432).
+# The Disease Division's services. The database: Postgres 16 with pgvector, which holds the
+# passages, their vectors and their keyword index. It is the same image Morning Manna uses, and it
+# listens on 5433 so the two databases can run side by side (Morning Manna's uses 5432). The API,
+# further down, starts only when asked for.
 #
 #   docker compose up -d --wait db    start it, and wait until it accepts connections
 #   docker compose stop db            stop it; the data stays in the named volume
@@ -21,6 +22,26 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+
+  # The API (Card D4): the librarian behind one endpoint, on http://127.0.0.1:8002 (see /docs).
+  # It only starts when asked for, because every answer costs money:
+  #   docker compose up -d --build --wait api    build it and start it beside the database
+  #   docker compose stop api                    stop it
+  # The key comes from .env when it starts. The server stops answering after $1.00 a run.
+  api:
+    build: .
+    profiles: ["api"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DIVISION_DB_URL: postgresql://division:division@db:5432/division
+      DIVISION_API_BUDGET: "1.00"
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "127.0.0.1:8002:8002"
 
 volumes:
   division-db:

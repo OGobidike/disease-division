@@ -92,3 +92,12 @@ def stored(conn: psycopg.Connection) -> dict[str, tuple[str, str]]:
     return {
         row[0]: (row[1], row[2]) for row in conn.execute("select id, text, model from passages")
     }
+
+
+def matches(conn: psycopg.Connection, documents: list[Document], model: str) -> bool:
+    """True when the store holds exactly these pages' passages, embedded by this model."""
+    held = stored(conn)
+    wanted = {p.id: p.text for p in all_passages(documents)}
+    return {k: v[0] for k, v in held.items()} == wanted and all(
+        v[1] == model for v in held.values()
+    )
