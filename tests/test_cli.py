@@ -107,7 +107,7 @@ def test_shelf_catches_a_verdict_on_a_question_that_cannot_have_one(tmp_path, ca
     assert "q49: a verdict needs an answerable golden question" in capsys.readouterr().out
 
 
-@pytest.mark.parametrize("command", [["ask", "Is there Wi-Fi?"], ["pilot"], ["answer"]])
+@pytest.mark.parametrize("command", [["ask", "Is there Wi-Fi?"], ["pilot"], ["answer"], ["serve"]])
 def test_every_paid_command_stops_first_when_there_is_no_key(
     command, tmp_path, monkeypatch, capsys
 ):
@@ -192,3 +192,20 @@ def test_the_sheet_waits_for_a_finished_run_and_never_overwrites(tmp_path, capsy
     assert (out / "hand-grades-haiku-5-5.toml").exists()
     assert main(args) == 1
     assert "already there, so it was left as it is" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "budget, args, says",
+    [
+        ("abc", [], "DIVISION_API_BUDGET must be a number"),
+        ("1.00", ["--budget", "0.001"], "can't cover one call at its worst case"),
+        ("nan", [], "must be a positive number"),
+        ("1.00", ["--budget", "inf"], "must be a positive number"),
+        ("1.00", ["--budget", "-1"], "must be a positive number"),
+    ],
+)
+def test_the_server_refuses_a_budget_it_cannot_use(budget, args, says, monkeypatch, capsys):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test-not-a-key")
+    monkeypatch.setenv("DIVISION_API_BUDGET", budget)
+    assert main(["serve", *args, "--kb", str(ROOT / "kb")]) == 1
+    assert says in capsys.readouterr().out

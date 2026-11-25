@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 import os
 import sys
 from collections import Counter
@@ -143,9 +144,7 @@ def load(kb: Path) -> int:
 def _store_matches(conn, documents, model: str) -> bool:
     from disease_division import store
 
-    held = store.stored(conn)
-    wanted = {p.id: p.text for p in all_passages(documents)}
-    if {k: v[0] for k, v in held.items()} != wanted or any(v[1] != model for v in held.values()):
+    if not store.matches(conn, documents, model):
         print("The store doesn't match the pages on disk. Run: uv run division load")
         return False
     return True
@@ -420,6 +419,48 @@ def write_sheet(model_name, questions_path, verdicts_path, folder, out) -> int:
     return 0
 
 
+def serve(host: str, port: int, kb: Path, budget: float | None) -> int:
+    """Run the API. It needs a key and a store that matches the pages, and checks both first."""
+    from disease_division import api
+    from disease_division.embed import FastEmbedder
+    from disease_division.librarian import Claude
+
+    if not has_key():
+        return 1
+    if budget is None:
+        try:
+            budget = float(os.environ.get("DIVISION_API_BUDGET", api.DEFAULT_BUDGET))
+        except ValueError:
+            print("DIVISION_API_BUDGET must be a number of US dollars, such as 1.00.")
+            return 1
+    if not math.isfinite(budget) or budget <= 0:
+        print(f"A budget must be a positive number of US dollars, such as 1.00, not {budget}.")
+        return 1
+    model = Claude(max_retries=0)  # one request is at most one billed call
+    if budget < api.worst_case(model.name):
+        print(
+            f"A budget of ${budget:g} can't cover one call at its worst case"
+            f" (${api.worst_case(model.name):.4f} on {model.name}), so nothing would be answered."
+        )
+        return 1
+    documents = load_documents(kb)
+    conn = _open_store()
+    if conn is None:
+        return 1
+    embedder = FastEmbedder()
+    with conn:
+        if not _store_matches(conn, documents, embedder.model):
+            return 1
+    import uvicorn
+
+    print(
+        f"The librarian is listening on http://{host}:{port} (try /docs). It stops answering"
+        f" after ${budget:g}. Ctrl+C to stop."
+    )
+    uvicorn.run(api.build(documents, embedder, model, budget), host=host, port=port)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="division", description="The Disease Division")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -465,6 +506,11 @@ def main(argv: list[str] | None = None) -> int:
     report_parser.add_argument("--runs", type=Path, default=RUNS)
     report_parser.add_argument("--out", type=Path, default=Path("results"))
     model_option(report_parser)
+    serve_parser = commands.add_parser("serve", help="run the API (answers cost money)")
+    serve_parser.add_argument("--host", default="127.0.0.1", help="127.0.0.1 is this computer only")
+    serve_parser.add_argument("--port", type=int, default=8002)
+    serve_parser.add_argument("--budget", type=float, default=None, help="US dollars per run")
+    serve_parser.add_argument("--kb", type=Path, default=Path("kb"))
     sheet_parser = commands.add_parser("sheet", help="write the blind hand-grading sheet")
     sheet_parser.add_argument("--questions", type=Path, default=QUESTIONS)
     sheet_parser.add_argument("--verdicts", type=Path, default=VERDICTS)
@@ -485,6 +531,8 @@ def main(argv: list[str] | None = None) -> int:
         return ask(args.question, args.model, args.kb, args.closed_book)
     if args.command == "pilot":
         return pilot(args.model, args.kb, args.runs, args.budget)
+    if args.command == "serve":
+        return serve(args.host, args.port, args.kb, args.budget)
     if args.command == "sheet":
         return write_sheet(args.model, args.questions, args.verdicts, args.runs, args.out)
     if args.command == "answer":

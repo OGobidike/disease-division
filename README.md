@@ -21,7 +21,7 @@ The shelves hold 59 help pages for a made-up airline, 60 frozen questions test a
 | --- | --- | --- |
 | 0. Ground | The [blueprint](docs/BLUEPRINT.md), tooling and CI | ✅ Done |
 | 1. The stacks | The knowledge base, the golden questions and their audit, two kinds of search, and the [first score](results/retrieval.md) | ✅ Done |
-| 2. The librarian | Answers that cite their passage, and an API | 🔨 Under way: [the librarian](#-the-librarian) and [its first score](#-the-librarians-first-score) are in; the API comes next |
+| 2. The librarian | Answers that cite their passage, and an API | ✅ Done: [the librarian](#-the-librarian), [its first score](#-the-librarians-first-score) and [the API](#-the-api) |
 | 3. The diseased books | The attacks, measured on the undefended system | Planned |
 | 4. The quarantine | The defenses, measured one at a time | Planned |
 | 5. The telling | The results, written up | Planned |
@@ -162,10 +162,59 @@ uv run division report
 
 `ask` answers one question and shows its citations and cost. `pilot` runs the 20 practice questions and says what the golden run will cost. `answer` asks the 60 golden questions 3 times each; it stops at $0.50 unless you pass `--budget`, and if it stops for any reason, running it again picks up where it stopped. `sheet` writes 20 replies, drawn by a fixed seed, for a person to grade blind; grade them before reading the report. `report` grades every reply, sets the hand grades against the code's, and writes `results/answers-haiku-5-5.md`. The golden run costs about 8 cents.
 
+## 📡 The API
+
+The same librarian the golden run scored, behind one endpoint: same model, same instructions, same search. Run it on your own computer (it needs the key in `.env` and a loaded store):
+
+```bash
+uv run division serve
+```
+
+Or in Docker, beside the database:
+
+```bash
+docker compose up -d --build --wait api
+```
+
+Then ask it something, or open http://127.0.0.1:8002/docs to try it in the browser:
+
+```bash
+curl -s -X POST http://127.0.0.1:8002/ask -H 'content-type: application/json' -d '{"question": "Can I take my bike with me?"}'
+```
+
+It answers with the reply, whether it declined, the sentences it cited, the passages it read, the tokens and what the answer cost:
+
+```json
+{
+  "answer": "Yes, you can take your bike. The fee for taking a bike is a flat NGN 10,000 per flight. …",
+  "declined": false,
+  "citations": [{"passage": "sports-equipment#2", "text": "Bicycles are carried for a flat fee of NGN 10,000 per flight."}],
+  "passages": [{"id": "sports-equipment#2", "title": "Sports equipment / Bicycles", "source": "staff", "visibility": "public"}, "…"],
+  "model": "claude-haiku-5-5",
+  "settings": "f343ab827861",
+  "stop_reason": "end_turn",
+  "input_tokens": 1924,
+  "output_tokens": 489,
+  "cost_usd": 0.00044,
+  "spent_usd": 0.00044,
+  "budget_usd": 1.0
+}
+```
+
+(An illustration of the shape, not a recorded reply.) `GET /health` says whether the store matches the pages, and costs nothing.
+
+Every answer spends money, so the server guards itself:
+
+- **It listens only on this computer.** `division serve` binds to `127.0.0.1`, and the compose file publishes the container's port on `127.0.0.1` only. It also answers only requests addressed to `127.0.0.1` or `localhost`, so a web page can't reach it through a renamed address (DNS rebinding), and it takes no body over 16 KB.
+- **It never starts a call that could take it past its budget**: $1.00 a run unless you pass `--budget` or set `DIVISION_API_BUDGET`. Before each call it reserves the most that call could cost (about $0.004 on Haiku), then settles the real cost, so answers given at the same moment can't add up past the budget. A call that fails after starting stays counted at its worst case, since it may have been billed, and the server makes no automatic retries, so one request is at most one billed call. A spend limit in the Claude Console is the limit beneath all this.
+- **It refuses questions over 500 characters**, and refuses to start without a key, with a budget that isn't a positive number or is too small for one call, or with a store that doesn't match the pages.
+- **It never shows a staff-only page itself.** A staff passage the librarian read, or cited, comes back only as "(staff only)", with no id, title or text. Whatever staff-only content reaches the asker gets there through the librarian's own reply, which is what the score measures, and what the defenses in Phase 4 will try to stop.
+- **The key never enters the Docker image.** It reaches the container from `.env` when the container starts (so `docker inspect` on this computer can show it, as with any container setting), and the server runs as an ordinary user, not as root.
+
 ## ✅ Tested
 
-- ✅ **205 tests**, run by CI on every push and pull request
-- ✅ **The store tests run against a real Postgres with pgvector**, each in a throwaway database, created for the test and dropped after it. CI starts its own database and fails if it can't reach it; on a laptop without one, those 10 tests skip.
+- ✅ **233 tests**, run by CI on every push and pull request
+- ✅ **The store tests run against a real Postgres with pgvector**, each in a throwaway database, created for the test and dropped after it. CI starts its own database and fails if it can't reach it; on a laptop without one, those 11 tests skip.
 - ✅ **The golden set is frozen.** A test checks the checksums of the questions and the pages, set before the first search ran, and of the yes-or-no verdicts, set before any model answered.
 - ✅ **Every answer checker is tested against the fault it exists to catch**: the right facts with the wrong yes or no, a staff fact stated with no citation (on any question), a control number, a citation of a staff page, a citation that points at the wrong passage or quotes altered text, and a run resumed under changed settings
 - ✅ **Every check on the golden set is tested against the fault it exists to catch**: a quote that isn't on its page, a quote found twice, a fact the quote doesn't state, a staff answer pointing at a public page, a "no answer" question the shelves actually answer

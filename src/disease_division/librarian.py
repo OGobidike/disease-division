@@ -237,19 +237,21 @@ class Claude:
     """The real model. The client is built on first use, so nothing touches the network or
     needs a key until a question is actually asked."""
 
-    def __init__(self, name: str = DEFAULT_MODEL, client=None) -> None:
+    def __init__(self, name: str = DEFAULT_MODEL, client=None, max_retries: int = 4) -> None:
         if name not in PRICES:
             raise ValueError(f"model must be one of {MODELS}, not {name!r}")
         self.name = name
         self._client = client
+        # Runs retry rate limits and dropped connections; the API server passes 0, so that one
+        # request is at most one billed call and its budget counts every one.
+        self.max_retries = max_retries
 
     @property
     def client(self):
         if self._client is None:
             import anthropic
 
-            # The SDK retries rate limits, overloads and dropped connections with backoff.
-            self._client = anthropic.Anthropic(max_retries=4)
+            self._client = anthropic.Anthropic(max_retries=self.max_retries)
         return self._client
 
     def answer(self, question: str, passages: list[Passage], closed_book: bool = False) -> Reply:
