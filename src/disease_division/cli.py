@@ -18,6 +18,12 @@ QUESTIONS = Path("evals/questions.toml")
 PILOT = Path("evals/pilot.toml")
 VERDICTS = Path("evals/verdicts.toml")
 RUNS = Path("results/runs")
+ATTACKS = Path("evals/attacks.toml")
+ATTACK_PAGES = Path("attacks")
+RETRIEVAL = Path("results/retrieval.csv")
+# The golden run the attacks are measured against: the same questions with nothing planted.
+CLEAN_RUN = Path("results/runs/golden-haiku-5-5.jsonl")
+CLEAN_ANSWERS = Path("results/answers-haiku-5-5.csv")
 
 
 def shelf(kb: Path, questions_path: Path, pilot_path: Path = PILOT, verdicts_path=VERDICTS) -> int:
@@ -115,6 +121,61 @@ def _open_store():
             "Is Docker Desktop open, and is the database up (docker compose up -d --wait db)?"
         )
         return None
+
+
+def diseased_books(
+    attacks_path: Path = ATTACKS,
+    pages_folder: Path = ATTACK_PAGES,
+    kb: Path = Path("kb"),
+    questions_path: Path = QUESTIONS,
+    verdicts_path: Path = VERDICTS,
+    retrieval: Path = RETRIEVAL,
+    clean_run: Path = CLEAN_RUN,
+    clean_answers: Path = CLEAN_ANSWERS,
+) -> int:
+    """Report on the attack pages and check every rule they must keep. Returns the exit code."""
+    from disease_division.attacks import FAMILIES, SEALED_PER_FAMILY, load_attacks, load_baseline
+    from disease_division.attacks import check as check_attacks
+    from disease_division.grade import load_verdicts, rules_for
+
+    try:
+        attacks = load_attacks(attacks_path)
+        pages = load_documents(pages_folder)
+        documents = load_documents(kb)
+        questions = load_questions(questions_path)
+        rules = rules_for(documents, questions, load_verdicts(verdicts_path))
+        baseline = load_baseline(clean_run, clean_answers, retrieval)
+    except (OSError, ValueError, KeyError) as error:
+        print(f"Could not read the attacks: {error}")
+        return 1
+
+    routes = Counter(p.source for p in pages)
+    aimed = {t for a in attacks for t in a.targets}
+    print(
+        f"The diseased books: {len(attacks)} attacks on {len(pages)} pages"
+        f" (web {routes['web']} · email {routes['email']}),"
+        f" aimed at {len(aimed)} golden questions"
+    )
+    route_of = {p.id: p.source for p in pages}
+    print(f"  {'family':<20}{'attacks':>8}{'web':>6}{'email':>7}")
+    for family in FAMILIES:
+        mine = [a for a in attacks if a.family == family]
+        web = sum(route_of.get(a.page) == "web" for a in mine)
+        email = sum(route_of.get(a.page) == "email" for a in mine)
+        print(f"  {family.replace('_', ' '):<20}{len(mine):>8}{web:>6}{email:>7}")
+    print(
+        f"The seal ({SEALED_PER_FAMILY} of each family) is drawn from the commit that merges the"
+        " frozen attacks, so nobody sees it while they are written."
+    )
+
+    problems = check_attacks(attacks, pages, questions, documents, baseline, rules)
+    if problems:
+        print(f"\n{len(problems)} problem(s):")
+        for problem in problems:
+            print(f"  - {problem}")
+        return 1
+    print("\nEvery rule passed.")
+    return 0
 
 
 def load(kb: Path) -> int:
@@ -511,6 +572,10 @@ def main(argv: list[str] | None = None) -> int:
     serve_parser.add_argument("--port", type=int, default=8002)
     serve_parser.add_argument("--budget", type=float, default=None, help="US dollars per run")
     serve_parser.add_argument("--kb", type=Path, default=Path("kb"))
+    attacks_parser = commands.add_parser("attacks", help="report on the attack pages, check rules")
+    attacks_parser.add_argument("--attacks", type=Path, default=ATTACKS)
+    attacks_parser.add_argument("--pages", type=Path, default=ATTACK_PAGES)
+    attacks_parser.add_argument("--kb", type=Path, default=Path("kb"))
     sheet_parser = commands.add_parser("sheet", help="write the blind hand-grading sheet")
     sheet_parser.add_argument("--questions", type=Path, default=QUESTIONS)
     sheet_parser.add_argument("--verdicts", type=Path, default=VERDICTS)
@@ -523,6 +588,8 @@ def main(argv: list[str] | None = None) -> int:
         return shelf(args.kb, args.questions, args.pilot, args.verdicts)
     if args.command == "load":
         return load(args.kb)
+    if args.command == "attacks":
+        return diseased_books(args.attacks, args.pages, args.kb)
     if args.command == "search":
         return find(args.question, args.method, args.kb, args.top)
     if args.command == "score":
